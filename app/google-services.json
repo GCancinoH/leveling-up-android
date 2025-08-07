@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737171817179",
+    "project_id": "leveling-up-2e8c2",
+    "storage_bucket": "leveling-up-2e8c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737171817179:android:cd5a3ac87df82ef1ca42fe",
+        "android_client_info": {
+          "package_name": "com.gcancino.levelingup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpl_rcJL33LWZCFgyWGOdvNJCN1jTeVA8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
