@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.gcancino.levelingup.core.Navigation
-import com.gcancino.levelingup.core.VoiceToTextParser
 import com.gcancino.levelingup.ui.theme.LevelingUpTheme
 import com.google.firebase.FirebaseApp
 import kotlin.getValue
@@ -33,9 +32,6 @@ class MainActivity : ComponentActivity() {
 
         // Setting app orientation
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
-
-        // Voice Parser
-        val voiceToTextParser by lazy { VoiceToTextParser(application) }
 
         enableEdgeToEdge()
         setContent {
