@@ -55,7 +55,7 @@ fun Navigation(
     val navController: NavHostController = rememberNavController()
     val coroutineScope: CoroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val appContainer = Container(context)
+    val appContainer = remember { Container(context) }
     var expandedDropDown by remember { mutableStateOf(false) }
 
     Scaffold(
