@@ -5,8 +5,9 @@ import androidx.glance.unit.Dimension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.QuestRepositoryImpl
 import com.gcancino.levelingup.domain.models.Quests
+import com.gcancino.levelingup.domain.repositories.QuestRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,9 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import javax.inject.Inject
 
-class QuestMenuViewModel(
-    private val repository: QuestRepositoryImpl
+@HiltViewModel
+class QuestMenuViewModel @Inject constructor(
+    private val repository: QuestRepository
 ) : ViewModel() {
 
     private val _quests = MutableStateFlow<List<Quests>>(emptyList())

@@ -42,8 +42,7 @@ import com.gcancino.levelingup.ui.theme.BackgroundColor
 
 @Composable
 fun SignUpScreen(
-    viewModel: SignUpViewModel,
-    ctx: Context
+    viewModel: SignUpViewModel
 ) {
 
     val animatedProgress by animateFloatAsState(
@@ -90,7 +89,7 @@ fun SignUpScreen(
                 }, label = ""
             ) { targetStep: Int ->
                 when (targetStep) {
-                    0 -> WelcomeStep(viewModel, ctx)
+                    0 -> WelcomeStep(viewModel)
                     1 -> AccountStep(
                         viewModel = viewModel.accountViewModel,
                         signUpViewModel = viewModel

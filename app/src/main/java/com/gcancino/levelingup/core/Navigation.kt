@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -49,13 +50,10 @@ import com.gcancino.levelingup.ui.components.fabs.DashboardFAB
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @ExperimentalMaterial3Api
 @Composable
-fun Navigation(
-    context: Context
-) {
+fun Navigation() {
     val navController: NavHostController = rememberNavController()
     val coroutineScope: CoroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val appContainer = remember { Container(context) }
     var expandedDropDown by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -89,7 +87,7 @@ fun Navigation(
                         QuestDropDownMenu(
                             expanded = expandedDropDown,
                             onDismissRequest = { expandedDropDown = false },
-                            viewModel =  appContainer.questMenuViewModel,
+                            viewModel = hiltViewModel(),
                         )
                     }
                     /*navigationIcon = {
@@ -111,7 +109,7 @@ fun Navigation(
             if (currentRoute == "dashboard") {
                 ExpandableFloatingButton(
                     snackbarState = snackbarHostState,
-                    bodyCompositionViewModel = appContainer.bodyCompositionBottomSheetViewModel,
+                    bodyCompositionViewModel = hiltViewModel(),
                 )
 
             }
@@ -125,7 +123,7 @@ fun Navigation(
         ) {
             composable("initScreen") {
                 InitScreen(
-                    viewModel = appContainer.initViewModel,
+                    viewModel = hiltViewModel(),
                     onSignedIn = {
                         navController.navigate("dashboard") {
                             popUpTo("initScreen") {
@@ -144,7 +142,7 @@ fun Navigation(
             }
             composable("signIn") {
                 SignInScreen(
-                    viewModel = appContainer.signInViewModel,
+                    viewModel = hiltViewModel(),
                     onSignedIn = { TODO() },
                     onSignInError = { TODO() },
                     onGoToSignUp = {
@@ -158,15 +156,13 @@ fun Navigation(
             }
             composable("signUp") {
                 SignUpScreen(
-                    viewModel = appContainer.signUpViewModel,
-                    ctx = context
+                    viewModel = hiltViewModel()
                 )
             }
             composable("dashboard") {
                 DashboardScreen(
-                    viewModel = appContainer.dashboardViewModel,
-                    bodyCompositionBottomSheetViewModel = appContainer.bodyCompositionBottomSheetViewModel
-
+                    viewModel = hiltViewModel(),
+                    bodyCompositionBottomSheetViewModel = hiltViewModel()
                 )
             }
             /*composable("improvements") {

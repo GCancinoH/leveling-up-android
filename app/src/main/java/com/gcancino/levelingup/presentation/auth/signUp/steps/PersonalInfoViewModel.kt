@@ -5,33 +5,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.glance.unit.Dimension
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
-import com.gcancino.levelingup.domain.models.Player
-import com.gcancino.levelingup.domain.models.player.Genders
 import com.gcancino.levelingup.domain.models.player.PlayerData
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
-import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.auth
-import com.google.firebase.auth.userProfileChangeRequest
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Date
 
 class PersonalInfoViewModel(
     val signUpViewModel: SignUpViewModel,
-    val authRepository: AuthRepositoryImpl
-) : ViewModel() {
+    val authRepository: AuthRepository
+) {
     private val _selectedGender = MutableStateFlow<String?>(null)
     val selectedGender: StateFlow<String?> = _selectedGender
 

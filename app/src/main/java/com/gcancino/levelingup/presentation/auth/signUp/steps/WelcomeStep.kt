@@ -78,8 +78,7 @@ object SystemColors {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeStep(
-    viewModel: SignUpViewModel,
-    ctx: Context
+    viewModel: SignUpViewModel
 ) {
     var showWelcomeDialog by remember { mutableStateOf(true) }
     var showCounterDialog by remember { mutableStateOf(false) }
@@ -91,7 +90,6 @@ fun WelcomeStep(
     ) {
         if (showWelcomeDialog) {
             WelcomeDialog(
-                ctx = ctx,
                 onDismiss = {
                     showWelcomeDialog = false
                     showCounterDialog = true
@@ -101,7 +99,6 @@ fun WelcomeStep(
 
         if (showCounterDialog) {
             CounterDialog(
-                ctx = ctx,
                 onAccept = {
                     showCounterDialog = false
                     viewModel.currentStep = 1
@@ -117,14 +114,14 @@ fun WelcomeStep(
 @ExperimentalMaterial3Api
 @Composable
 fun WelcomeDialog(
-    ctx: Context,
     onDismiss: () -> Unit
 ) {
     var countdown by remember { mutableIntStateOf(5) }
     val playSystemSound = rememberSystemSoundPlayer()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        playSystemSound(ctx)
+        playSystemSound(context)
         while (countdown > 0) {
             delay(1000)
             countdown--
@@ -191,13 +188,13 @@ fun WelcomeDialog(
 @ExperimentalMaterial3Api
 @Composable
 fun CounterDialog(
-    ctx: Context,
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
     var countDown by remember { mutableIntStateOf(10) }
     var infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val playSystemSound = rememberSystemSoundPlayer()
+    val context = LocalContext.current
 
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -210,7 +207,7 @@ fun CounterDialog(
     )
 
     LaunchedEffect(Unit) {
-        playSystemSound(ctx)
+        playSystemSound(context)
         while(countDown > 0) {
             delay(1000)
             countDown--

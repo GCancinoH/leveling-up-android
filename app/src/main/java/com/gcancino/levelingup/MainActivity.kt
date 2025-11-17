@@ -17,26 +17,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.gcancino.levelingup.core.Navigation
 import com.gcancino.levelingup.ui.theme.LevelingUpTheme
 import com.google.firebase.FirebaseApp
+import dagger.hilt.android.AndroidEntryPoint
 import kotlin.getValue
 
+@AndroidEntryPoint
 @ExperimentalMaterial3Api
 class MainActivity : ComponentActivity() {
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val context = applicationContext
-
-        // Initialize Firebase
-        FirebaseApp.initializeApp(context)
-
         // Setting app orientation
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         enableEdgeToEdge()
         setContent {
             LevelingUpTheme {
-                Navigation(context)
+                Navigation()
             }
         }
     }

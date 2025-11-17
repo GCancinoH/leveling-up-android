@@ -5,12 +5,11 @@ import android.util.Patterns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
+import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,8 +18,8 @@ import java.util.regex.Pattern
 
 class AccountStepViewModel(
     val signUpViewModel: SignUpViewModel,
-    val authRepository: AuthRepositoryImpl
-) : ViewModel() {
+    val authRepository: AuthRepository
+) {
     var email by mutableStateOf("")
         private set
     var emailError by mutableStateOf<String?>(null)

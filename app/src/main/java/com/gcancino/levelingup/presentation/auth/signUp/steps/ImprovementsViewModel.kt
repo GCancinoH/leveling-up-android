@@ -1,23 +1,20 @@
 package com.gcancino.levelingup.presentation.auth.signUp.steps
 
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.local.database.dao.PlayerDao
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
 import com.gcancino.levelingup.domain.models.player.Improvement
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ImprovementsViewModel(
     private val signUpViewModel: SignUpViewModel,
-    private val authRepository: AuthRepositoryImpl
-) : ViewModel() {
+    private val authRepository: AuthRepository
+) {
     private val _selectedImprovements = mutableStateListOf<Improvement>()
     val selectedImprovements: List<Improvement> = _selectedImprovements
 
