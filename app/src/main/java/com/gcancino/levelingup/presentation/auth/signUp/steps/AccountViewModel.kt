@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
+import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -5,8 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.local.database.dao.PlayerDao
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
 import com.gcancino.levelingup.domain.models.player.Improvement
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
