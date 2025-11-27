@@ -23,10 +23,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.collections.emptyList
+import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resumeWithException
 
-class QuestRepositoryImpl(
+class QuestRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore,
     private val questDao: QuestDao,
     private val playerDao: PlayerDao

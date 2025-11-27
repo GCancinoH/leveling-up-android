@@ -8,11 +8,8 @@ import androidx.glance.unit.Dimension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.local.database.dao.PlayerDao
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,12 +17,9 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 class PhysicalAttributesViewModel(
-    val signUpViewModel: SignUpViewModel,
-    val playerDao: PlayerDao,
-    val authRepository: AuthRepositoryImpl
+    private val signUpViewModel: SignUpViewModel,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
-    // Injectors
-    val db = FirebaseFirestore.getInstance()
     var weight by mutableStateOf("")
     var height by mutableStateOf("")
     var bmi by mutableStateOf("")

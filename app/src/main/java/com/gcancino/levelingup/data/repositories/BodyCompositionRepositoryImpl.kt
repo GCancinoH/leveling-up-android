@@ -18,8 +18,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class BodyCompositionRepositoryImpl (
+class BodyCompositionRepositoryImpl @Inject constructor(
     private val bodyCompositionDao: BodyCompositionDao,
     private val db: FirebaseFirestore,
     private val storageDB: FirebaseStorage,

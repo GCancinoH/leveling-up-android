@@ -4,15 +4,18 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.BodyCompositionRepositoryImpl
-import com.gcancino.levelingup.data.repositories.QuestRepositoryImpl
+import com.gcancino.levelingup.domain.repositories.BodyCompositionRepository
+import com.gcancino.levelingup.domain.repositories.QuestRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DashboardViewModel(
-    private val questRepository: QuestRepositoryImpl,
-    private val bodyCompositionRepository: BodyCompositionRepositoryImpl
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
+    private val questRepository: QuestRepository,
+    private val bodyCompositionRepository: BodyCompositionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<Resource<Unit>>(Resource.Loading())

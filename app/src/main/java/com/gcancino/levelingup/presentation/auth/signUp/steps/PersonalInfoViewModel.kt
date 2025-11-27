@@ -9,7 +9,6 @@ import androidx.glance.unit.Dimension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.AuthRepositoryImpl
 import com.gcancino.levelingup.domain.models.Player
 import com.gcancino.levelingup.domain.models.player.Genders
 import com.gcancino.levelingup.domain.models.player.PlayerData
