@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.entities.QuestEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -29,6 +30,9 @@ interface QuestDao {
 
     @Query("SELECT * FROM quests WHERE status = 'NOT_STARTED'")
     fun getNotStartedQuests() : Flow<List<QuestEntity>>
+
+    @Query("SELECT * FROM quests WHERE questID = :questId")
+    suspend fun getQuestById(questId: String): QuestEntity?
 
     @Query("UPDATE quests SET status = 'IN_PROGRESS' WHERE id = :questId")
     suspend fun updateQuestStatusToInProgress(questId: String): Int

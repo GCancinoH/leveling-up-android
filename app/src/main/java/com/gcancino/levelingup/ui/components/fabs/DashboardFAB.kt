@@ -1,6 +1,6 @@
 package com.gcancino.levelingup.ui.components.fabs
 
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+/*import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Snooze
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.MonitorWeight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
@@ -49,7 +50,7 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import com.gcancino.levelingup.ui.theme.purpleBlueGradient
 
-@ExperimentalMaterial3ExpressiveApi
+@ExperimentalMaterial3Api
 @Composable
 fun DashboardFAB() {
 
@@ -121,4 +122,4 @@ fun DashboardFAB() {
             )
         }
     }
-}
+}*/

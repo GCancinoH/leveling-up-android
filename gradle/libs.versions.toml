@@ -1,38 +1,43 @@
 [versions]
-agp = "8.12.0"
-kotlin = "2.2.0"
-coreKtx = "1.16.0"
+agp = "8.13.1"
+kotlin = "2.2.21"
+coreKtx = "1.17.0"
 junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.9.2"
-lifecycleCompose = "2.9.2"
+junitVersion = "1.3.0"
+espressoCore = "3.7.0"
+lifecycleRuntimeKtx = "2.10.0"
+lifecycleCompose = "2.10.0"
 lifecycleExt = "2.2.0"
-activityCompose = "1.10.1"
-navigationCompose = "2.9.2"
-composeBom = "2025.07.00"
-firebaseBom = "34.0.0"
+activityCompose = "1.12.0"
+navigationCompose = "2.9.6"
+composeBom = "2025.11.01"
+firebaseBom = "34.6.0"
 coroutines = "1.10.2"
-splashscreen = "1.0.1"
-dataStore = "1.1.7"
-room = "2.7.2"
-googleServices = "4.4.3"
+splashscreen = "1.2.0"
+dataStore = "1.2.0"
+room = "2.8.4"
+googleServices = "4.4.4"
 googleCodeScanner = "16.1.0"
 googleAccompanist = "0.37.3"
-gson = "2.13.1"
-googleAuth = "21.3.0"
+gson = "2.13.2"
+googleAuth = "21.4.0"
 retrofit = "3.0.0"
-materialAlpha = "1.4.0-alpha18"
-camera = "1.4.2"
-coil = "3.2.0"
+materialAlpha = "1.4.0"
+camera = "1.5.1"
+coil = "3.3.0"
 glance = "1.1.1"
-worker = "2.10.2"
-kspVersion = "2.2.0-2.0.2"
-kotlinSerialization = "2.2.0"
+worker = "2.11.0"
+kspVersion = "2.2.20-2.0.3"
+kotlinSerialization = "2.2.21"
 kotlinSerializationJson = "1.9.0"
 kotlinReflect = "2.1.20"
 oneSignal = "[5.0.0,5.99.99)"
-sqlCipher = "4.9.0"
+sqlCipher = "4.11.0"
+vosk = "0.3.70"
+reown = "1.5.1"
+hilt = "2.57.2"
+hiltCompose = "1.3.0"
+hiltWork = "1.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -98,6 +103,12 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-processor = { module = "androidx.room:room-compiler-processing", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 
+# Hilt
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltCompose" }
+hilt-worker = { module = "androidx.hilt:hilt-work", version.ref = "hiltWork" }
+hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+
 # Other libs
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-converter = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
@@ -108,6 +119,11 @@ kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-j
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref="kotlinReflect" }
 oneSignal = { module = "com.onesignal:OneSignal", version.ref = "oneSignal" }
 sqlCipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlCipher" }
+#noinspection Aligned16KB
+vosk = { group = 'com.alphacephei', name = 'vosk-android', version.ref = 'vosk' }
+reownBom = { module = "com.reown:android-bom", version.ref = "reown" }
+reown-core = { module = "com.reown:android-core" }
+reown-appKit = { module = "com.reown:appkit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -116,3 +132,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

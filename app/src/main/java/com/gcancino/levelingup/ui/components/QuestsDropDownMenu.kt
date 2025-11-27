@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.gcancino.levelingup.R
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.QuestMenuViewModel
@@ -30,6 +31,7 @@ fun QuestDropDownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     viewModel: QuestMenuViewModel,
+    navController: NavHostController
 ) {
     val quests by viewModel.quests.collectAsState()
     var showQuestDetailsDialog by remember { mutableStateOf<Quests?>(null) }
@@ -80,7 +82,10 @@ fun QuestDropDownMenu(
         QuestDetailBottomSheet(
             modifier = Modifier,
             quest = questToShow,
-            onDismiss = { showQuestDetailsDialog = null }
+            onDismiss = { showQuestDetailsDialog = null },
+            onAccept = {
+                navController.navigate("questStared/${questToShow.id}")
+            }
         )
 
     }

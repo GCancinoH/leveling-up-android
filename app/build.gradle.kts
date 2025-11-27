@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -38,6 +40,12 @@ android {
     }*/
     buildFeatures {
         compose = true
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 
@@ -101,6 +109,12 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camera.view)
 
+    // Hilt
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.compose)
+    implementation(libs.hilt.worker)
+    ksp(libs.hilt.compiler)
+
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter)
@@ -115,6 +129,13 @@ dependencies {
     // Kotlin Reflect
     implementation(libs.kotlin.reflect)
     implementation(libs.sqlCipher)
+    // Vosk Speech Recognition
+    implementation(libs.vosk)
+    // ReOwn
+    implementation(platform(libs.reownBom))
+    implementation(libs.reown.core)
+    implementation(libs.reown.appKit)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -13,10 +13,13 @@ import com.gcancino.levelingup.domain.repositories.QuestRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlin.collections.emptyList
@@ -108,6 +111,23 @@ class QuestRepositoryImpl(
             emit(emptyList())
         }
     }
+
+    override suspend fun getQuestByQuestID(questID: String): Quests {
+        val questEntity = questDao.getQuestById(questID)
+
+        if (questEntity == null) {
+            return Quests()
+        }
+
+        return questEntity.toDomain()
+    }
+        /*return flow {
+            emit(Resource.Loading())
+
+
+        }.catch { e ->
+            emit(Resource.Error("Error fetching quest: ${e.localizedMessage ?: "Unknown error"}"))
+        }.flowOn(Dispatchers.IO)*/
 
     private suspend fun getQuestsFromFirestore(): List<Quests> {
         return try {

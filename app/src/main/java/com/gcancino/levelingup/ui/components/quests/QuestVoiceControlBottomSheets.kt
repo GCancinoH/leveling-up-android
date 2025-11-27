@@ -74,7 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.gcancino.levelingup.R
-import com.gcancino.levelingup.core.VoiceToTextParser
+import com.gcancino.levelingup.core.OnlineVoiceParser
 import com.gcancino.levelingup.domain.models.EnduranceDetails
 import com.gcancino.levelingup.domain.models.Quests
 import kotlinx.coroutines.Job
@@ -86,7 +86,7 @@ import java.util.Locale
 @Composable
 fun QuestVoiceControlBottomSheet(
     quest: Quests,
-    voiceParser: VoiceToTextParser,
+    voiceParser: OnlineVoiceParser,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {

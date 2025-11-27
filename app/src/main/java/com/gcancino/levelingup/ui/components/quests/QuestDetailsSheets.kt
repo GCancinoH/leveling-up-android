@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.R
-import com.gcancino.levelingup.core.VoiceToTextParser
+import com.gcancino.levelingup.core.IVoiceToTextParser
 import com.gcancino.levelingup.ui.components.QuestTimerCircularProgressBar
 import com.gcancino.levelingup.ui.theme.Blue40
 import com.gcancino.levelingup.ui.theme.purpleBlueGradient
@@ -57,7 +57,7 @@ fun QuestDetailBottomSheet(
     modifier: Modifier = Modifier,
     quest: Quests,
     onDismiss: () -> Unit,
-    onAccept: () -> Unit = {},
+    onAccept: () -> Unit,
 ) {
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
@@ -223,9 +223,7 @@ fun QuestDetailBottomSheet(
 
                 // Accept Button
                 Button(
-                    onClick = {
-                        expandedDropDown = !expandedDropDown
-                    },
+                    onClick = onAccept,
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
@@ -257,7 +255,7 @@ fun QuestDetailBottomSheet(
         true -> {
             QuestVoiceControlBottomSheet(
                 quest = quest,
-                voiceParser = VoiceToTextParser(LocalContext.current),
+                voiceParser = IVoiceToTextParser(LocalContext.current),
                 onDismiss = onDismiss
             )
         }

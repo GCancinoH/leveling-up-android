@@ -1,5 +1,6 @@
 package com.gcancino.levelingup.core
 
+import android.app.Application
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import com.gcancino.levelingup.data.local.database.AppDatabase
@@ -13,13 +14,15 @@ import com.gcancino.levelingup.presentation.initialization.InitViewModel
 import com.gcancino.levelingup.presentation.player.dashboard.DashboardViewModel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.BodyCompositionBottomSheetViewModel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.QuestMenuViewModel
+import com.gcancino.levelingup.ui.components.quests.QuestStartedViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlin.getValue
 
 class Container(
-    private val context: Context
+    private val context: Context,
+    private val application: Application
 ) {
     val auth by lazy { FirebaseAuth.getInstance() }
     val db by lazy { FirebaseFirestore.getInstance() }
@@ -50,6 +53,6 @@ class Container(
     val signUpViewModel by lazy { SignUpViewModel(authRepository, auth, bodyCompositionRepository, playerDB  ) }
     val dashboardViewModel by lazy { DashboardViewModel(questRepository, bodyCompositionRepository) }
     val questMenuViewModel by lazy { QuestMenuViewModel(questRepository) }
-
+    val questStartedViewModel by lazy { QuestStartedViewModel(questRepository, application) }
     val bodyCompositionBottomSheetViewModel by lazy { BodyCompositionBottomSheetViewModel() }
 }
