@@ -40,12 +40,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.gcancino.levelingup.R
 import com.gcancino.levelingup.core.Resource
 
 @Composable
 fun SignInScreen(
-    viewModel: SignInViewModel,
+    viewModel: SignInViewModel = hiltViewModel(),
     onSignedIn: () -> Unit,
     onSignInError: () -> Unit,
     onGoToSignUp: () -> Unit,

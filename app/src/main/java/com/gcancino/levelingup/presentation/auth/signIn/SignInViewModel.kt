@@ -7,11 +7,14 @@ import androidx.lifecycle.ViewModel
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.domain.models.Player
 import com.gcancino.levelingup.domain.repositories.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
-class SignInViewModel(
+@HiltViewModel
+class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
     var email by mutableStateOf("")

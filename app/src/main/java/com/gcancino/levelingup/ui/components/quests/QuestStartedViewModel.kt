@@ -12,9 +12,10 @@ import com.gcancino.levelingup.core.IVoiceToTextParser
 import com.gcancino.levelingup.core.OnlineVoiceParser
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.core.voiceParser.OfflineVoiceParser
-import com.gcancino.levelingup.data.repositories.QuestRepositoryImpl
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.models.VoiceToTextParserState
+import com.gcancino.levelingup.domain.repositories.QuestRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,9 +25,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.vosk.Model
 import java.util.Locale
+import javax.inject.Inject
 
-class QuestStartedViewModel(
-    private val questRepository: QuestRepositoryImpl,
+@HiltViewModel
+class QuestStartedViewModel @Inject constructor(
+    private val questRepository: QuestRepository,
     private val application: Application,
     private val offlineModel: Model? = null
 ) : ViewModel() {

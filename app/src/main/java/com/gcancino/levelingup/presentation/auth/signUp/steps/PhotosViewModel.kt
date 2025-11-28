@@ -4,8 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.local.database.dao.BodyCompositionDao
-import com.gcancino.levelingup.data.repositories.BodyCompositionRepositoryImpl
+import com.gcancino.levelingup.domain.repositories.BodyCompositionRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,8 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class PhotosViewModel(
-    val signUpViewModel: SignUpViewModel,
-    val bodyCompositionRepository: BodyCompositionRepositoryImpl
+    private val signUpViewModel: SignUpViewModel,
+    private val bodyCompositionRepository: BodyCompositionRepository
 ) : ViewModel() {
     private val _photos = MutableStateFlow<List<Uri>>(emptyList())
     val photos: StateFlow<List<Uri>> = _photos

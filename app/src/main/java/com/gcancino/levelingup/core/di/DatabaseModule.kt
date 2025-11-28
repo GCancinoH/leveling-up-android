@@ -1,6 +1,7 @@
 package com.gcancino.levelingup.core.di
 
 import android.content.Context
+import androidx.room.Room
 import com.gcancino.levelingup.data.local.database.AppDatabase
 import dagger.Module
 import dagger.Provides
@@ -12,34 +13,37 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getInstance(context)
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "leveling_up_db"
+        ).build()
     }
 
     @Provides
     @Singleton
-    fun providePlayerDao(appDatabase: AppDatabase) = appDatabase.playerDao()
+    fun providePlayerDao(db: AppDatabase) = db.playerDao()
 
     @Provides
     @Singleton
-    fun providePlayerProgressDao(appDatabase: AppDatabase) = appDatabase.playerProgressDao()
+    fun providePlayerAttributesDao(db: AppDatabase) = db.playerAttributesDao()
 
     @Provides
     @Singleton
-    fun providePlayerAttributesDao(appDatabase: AppDatabase) = appDatabase.playerAttributesDao()
+    fun providePlayerProgressDao(db: AppDatabase) = db.playerProgressDao()
 
     @Provides
     @Singleton
-    fun providePlayerStreakDao(appDatabase: AppDatabase) = appDatabase.playerStreakDao()
+    fun providePlayerStreakDao(db: AppDatabase) = db.playerStreakDao()
 
     @Provides
     @Singleton
-    fun provideQuestDao(appDatabase: AppDatabase) = appDatabase.questDao()
+    fun provideBodyCompositionDao(db: AppDatabase) = db.bodyCompositionDao()
 
     @Provides
     @Singleton
-    fun provideBodyCompositionDao(appDatabase: AppDatabase) = appDatabase.bodyCompositionDao()
+    fun provideQuestDao(db: AppDatabase) = db.questDao()
 }
