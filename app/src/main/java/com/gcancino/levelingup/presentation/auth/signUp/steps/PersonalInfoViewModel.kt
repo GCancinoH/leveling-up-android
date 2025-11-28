@@ -29,7 +29,7 @@ import java.util.Date
 
 class PersonalInfoViewModel(
     val signUpViewModel: SignUpViewModel,
-    val authRepository: AuthRepositoryImpl
+    val authRepository: AuthRepository
 ) : ViewModel() {
     private val _selectedGender = MutableStateFlow<String?>(null)
     val selectedGender: StateFlow<String?> = _selectedGender

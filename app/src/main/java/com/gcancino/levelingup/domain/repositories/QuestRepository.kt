@@ -8,5 +8,6 @@ interface QuestRepository {
     suspend fun syncQuestsFromFirestoreDos(): Resource<Unit>
     suspend fun syncQuestsFromFirestore(): Resource<Unit>
     fun getNotStartedQuests(): Flow<List<Quests>>
-    suspend fun getQuestByQuestID(questID: String): Quests
+    suspend fun getQuestByQuestID(questID: String): Resource<Quests>
+    suspend fun updateQuestStatus(questID: String) : Resource<Unit>
 }

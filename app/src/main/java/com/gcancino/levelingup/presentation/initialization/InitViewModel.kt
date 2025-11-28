@@ -7,6 +7,7 @@ import com.gcancino.levelingup.data.local.datastore.DataStoreManager
 import com.gcancino.levelingup.domain.models.Player
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.domain.repositories.QuestRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,8 @@ data class InitUIState(
 class InitViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val dataStoreManager: DataStoreManager,
-    private val questRepository: QuestRepository
+    private val questRepository: QuestRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
     private val _userState = MutableStateFlow<Resource<Player>>(Resource.Loading())
     val userState: StateFlow<Resource<Player>> = _userState.asStateFlow()

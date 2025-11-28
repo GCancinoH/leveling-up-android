@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.R
 import com.gcancino.levelingup.ui.components.QuestTimerCircularProgressBar
@@ -55,7 +56,7 @@ import com.gcancino.levelingup.ui.theme.purpleBlueGradient
 fun QuestDetailBottomSheet(
     modifier: Modifier = Modifier,
     quest: Quests,
-    viewModel: QuestStartedViewModel,
+    viewModel: QuestStartedViewModel = hiltViewModel(),
     onDismiss: () -> Unit,
     onAccept: () -> Unit,
 ) {

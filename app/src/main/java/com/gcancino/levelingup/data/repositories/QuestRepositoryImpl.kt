@@ -1,8 +1,5 @@
 package com.gcancino.levelingup.data.repositories
 
-import android.util.Log
-import androidx.compose.foundation.layout.size
-import androidx.work.await
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.dao.PlayerDao
 import com.gcancino.levelingup.data.local.database.dao.QuestDao
@@ -13,19 +10,13 @@ import com.gcancino.levelingup.domain.repositories.QuestRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.any
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 import kotlin.collections.emptyList
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.coroutines.resumeWithException
 
 class QuestRepositoryImpl @Inject constructor(
     private val db: FirebaseFirestore,
@@ -38,7 +29,7 @@ class QuestRepositoryImpl @Inject constructor(
     override suspend fun syncQuestsFromFirestoreDos(): Resource<Unit> {
         return try {
             val questsFromFirestore = getQuestsFromFirestore()
-            Log.d("QuestRepository", "Quests from Firestore: $questsFromFirestore")
+            Timber.tag("QuestRepository").d("Quests from Firestore: $questsFromFirestore")
             val questEntities = questsFromFirestore.map { it.toEntity() }
 
             questDao.deleteAllQuests()
@@ -50,19 +41,22 @@ class QuestRepositoryImpl @Inject constructor(
 
             if (questEntities.isNotEmpty() && successfulInserts == questEntities.size) {
                 // All entities that we attempted to insert seem to have been inserted successfully by Room.
-                Log.d("QuestRepository", "Successfully inserted $successfulInserts quests into Room.")
+                Timber.tag("QuestRepository")
+                    .d("Successfully inserted $successfulInserts quests into Room.")
                 Resource.Success(Unit) // Or you could return Resource.Success(successfulInserts)
             } else if (questEntities.isEmpty() && successfulInserts == 0) {
                 // No quests from Firestore, nothing to insert, which is a valid success state.
-                Log.d("QuestRepository", "No quests from Firestore to insert.")
+                Timber.tag("QuestRepository").d("No quests from Firestore to insert.")
                 Resource.Success(Unit)
             } else {
                 // Partial success or failure in insertion according to Room.
-                Log.w("QuestRepository", "Insertion issue: Attempted to insert ${questEntities.size}, Room reported $successfulInserts successful rowIds. Results: $insertionResults")
+                Timber.tag("QuestRepository")
+                    .w("Insertion issue: Attempted to insert ${questEntities.size}, Room reported $successfulInserts successful rowIds. Results: $insertionResults")
                 Resource.Error("Failed to insert all quests. Successful: $successfulInserts/${questEntities.size}")
             }
         } catch (e: Exception) {
-            Log.e("QuestRepository", "Exception during Firestore sync or DB operation: ${e.message}", e)
+            Timber.tag("QuestRepository")
+                .e(e, "Exception during Firestore sync or DB operation: ${e.message}")
             Resource.Error(e.message ?: "Unknown error occurred during sync")
         }
         /*return try {
@@ -108,19 +102,22 @@ class QuestRepositoryImpl @Inject constructor(
             questDao.getNotStartedQuests().collect { quests ->
                 emit(quests.map { it.toDomain() })
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emit(emptyList())
         }
     }
 
-    override suspend fun getQuestByQuestID(questID: String): Quests {
-        val questEntity = questDao.getQuestById(questID)
-
-        if (questEntity == null) {
-            return Quests()
+    override suspend fun getQuestByQuestID(questID: String): Resource<Quests> {
+        return try {
+            val questEntity = questDao.getQuestById(questID)
+            if (questEntity != null) {
+                Resource.Success(questEntity.toDomain())
+            } else {
+                Resource.Error("Quest not found")
+            }
+        } catch (e: Exception) {
+            Resource.Error("Failed to get quest: ${e.message}", exception = e)
         }
-
-        return questEntity.toDomain()
     }
         /*return flow {
             emit(Resource.Loading())
@@ -140,22 +137,23 @@ class QuestRepositoryImpl @Inject constructor(
                 try {
                     documentSnapshot.toObject<Quests>()
                 } catch (e: Exception) {
-                    Log.e("Firestore", "Error converting document ${documentSnapshot.id} to Quests", e)
+                    Timber.tag("Firestore")
+                        .e(e, "Error converting document ${documentSnapshot.id} to Quests")
                     null
                 }
             }
-            Log.d("Firestore", "Successfully fetched ${questsList.size} quests.")
+            Timber.tag("Firestore").d("Successfully fetched ${questsList.size} quests.")
             questsList
         } catch (e: CancellationException) {
-            Log.d("Firestore", "Firestore getQuests operation was cancelled.")
+            Timber.tag("Firestore").d("Firestore getQuests operation was cancelled.")
             throw e
         } catch (e: Exception) {
-            Log.e("Firestore", "Error fetching quests from Firestore: ${e.message}", e)
+            Timber.tag("Firestore").e(e, "Error fetching quests from Firestore: ${e.message}")
             emptyList()
         }
     }
 
-    suspend fun updateQuestStatus(questID: String) : Resource<Unit> {
+    override suspend fun updateQuestStatus(questID: String) : Resource<Unit> {
         return try {
             questDao.updateQuestStatusToCompleted(questID)
             Resource.Success(Unit)

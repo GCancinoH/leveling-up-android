@@ -9,13 +9,15 @@ import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.domain.models.BodyComposition
 import com.gcancino.levelingup.domain.repositories.BodyCompositionRepository
 import com.gcancino.levelingup.presentation.auth.signUp.SignUpViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class BodyCompositionViewModel(
     private val signUpViewModel: SignUpViewModel,
-    private val repository: BodyCompositionRepository
+    private val repository: BodyCompositionRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
     var fatPercentage by mutableStateOf("")
     var musclePercentage by mutableStateOf("")

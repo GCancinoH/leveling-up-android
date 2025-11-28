@@ -19,7 +19,7 @@ import java.util.regex.Pattern
 
 class AccountStepViewModel(
     val signUpViewModel: SignUpViewModel,
-    val authRepository: AuthRepositoryImpl
+    val authRepository: AuthRepository
 ) : ViewModel() {
     var email by mutableStateOf("")
         private set

@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class ImprovementsViewModel(
     private val signUpViewModel: SignUpViewModel,
-    private val authRepository: AuthRepositoryImpl
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     private val _selectedImprovements = mutableStateListOf<Improvement>()
     val selectedImprovements: List<Improvement> = _selectedImprovements

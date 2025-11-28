@@ -1,10 +1,8 @@
 package com.gcancino.levelingup.presentation.auth.signUp
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.gcancino.levelingup.domain.repositories.AuthRepository
@@ -15,6 +13,7 @@ import com.gcancino.levelingup.presentation.auth.signUp.steps.ImprovementsViewMo
 import com.gcancino.levelingup.presentation.auth.signUp.steps.PersonalInfoViewModel
 import com.gcancino.levelingup.presentation.auth.signUp.steps.PhotosViewModel
 import com.gcancino.levelingup.presentation.auth.signUp.steps.PhysicalAttributesViewModel
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -22,12 +21,13 @@ import javax.inject.Inject
 class SignUpViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val bodyCompositionRepository: BodyCompositionRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     val accountViewModel by lazy { AccountStepViewModel(this, authRepository) }
     val personalInfoViewModel by lazy { PersonalInfoViewModel(this, authRepository) }
     val physicalAttributesViewModel by lazy { PhysicalAttributesViewModel(this, authRepository) }
-    val bodyCompositionViewModel by lazy { BodyCompositionViewModel(this, bodyCompositionRepository) }
+    val bodyCompositionViewModel by lazy { BodyCompositionViewModel(this, bodyCompositionRepository, auth) }
     val improvementsViewModel by lazy { ImprovementsViewModel(this, authRepository) }
     val photosViewModel by lazy { PhotosViewModel(this, bodyCompositionRepository) }
 
@@ -45,7 +45,4 @@ class SignUpViewModel @Inject constructor(
         currentStep--
         progress -= progressIncrement
     }
-
-
-
 }

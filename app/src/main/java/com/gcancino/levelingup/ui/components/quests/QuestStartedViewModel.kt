@@ -5,7 +5,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.IVoiceToTextParser
@@ -51,6 +50,45 @@ class QuestStartedViewModel @Inject constructor(
     init {
         initializeTextToSpeech()
         startConnectivityMonitoring()
+    }
+
+    fun loadQuest(questId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                when (val result = questRepository.getQuestByQuestID(questId)) {
+                    is Resource.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                quest = result.data,
+                                isLoading = false,
+                                targetTime = result.data?.details?.targetTime?.toLong()
+                            )
+                        }
+                    }
+
+                    is Resource.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message ?: "Failed to load quest"
+                            )
+                        }
+                    }
+
+                    is Resource.Loading -> {
+                        // Handle loading if needed
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Exception: ${e.message}"
+                    )
+                }
+            }
+        }
     }
 
     fun initializeQuest(quest: Quests) {
@@ -168,7 +206,7 @@ class QuestStartedViewModel @Inject constructor(
     }
 
     private fun handleVoiceCommand(command: String) {
-        when (command.uppercase()) {
+        when (command.uppercase(Locale.getDefault())) {
             "START" -> startTimer()
             "PAUSE" -> pauseTimer()
             "RESUME" -> resumeTimer()
@@ -259,9 +297,7 @@ class QuestStartedViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isSaving = true, error = null) }
 
-                val result = questRepository.updateQuestStatus(quest.id)
-
-                when (result) {
+                when (val result = questRepository.updateQuestStatus(quest.id)) {
                     is Resource.Success -> {
                         _uiState.update {
                             it.copy(
@@ -270,6 +306,7 @@ class QuestStartedViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is Resource.Error -> {
                         _uiState.update {
                             it.copy(
@@ -278,7 +315,8 @@ class QuestStartedViewModel @Inject constructor(
                             )
                         }
                     }
-                    else -> null
+
+                    is Resource.Loading -> null
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -310,6 +348,7 @@ class QuestStartedViewModel @Inject constructor(
                             "nearTargetNotification"
                         )
                     }
+
                     state.isOverTarget -> {
                         tts?.speak(
                             "You did it! Great job!",
@@ -376,217 +415,6 @@ class QuestStartedViewModel @Inject constructor(
     }
 }
 
-/*class QuestStartedViewModel(
-    val voiceParser: VoiceToTextParser,
-    val questRepository: QuestRepositoryImpl,
-    val application: Application
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(QuestStartedUiState())
-    val uiState: StateFlow<QuestStartedUiState> = _uiState.asStateFlow()
-
-    private val _voiceState = voiceParser.state
-    val voiceState: StateFlow<VoiceToTextParserState> = _voiceState
-
-    private var timerJob: Job? = null
-    private var tts: TextToSpeech? = null
-
-    init {
-
-    }
-
-
-
-    fun requestMicPermission() { /* TODO() */  }
-
-    fun onPermissionResult(isGranted: Boolean) {
-        _uiState.update { it.copy(canRecord = isGranted) }
-
-        if (isGranted) {
-            startVoiceListening()
-        }
-    }
-
-    private fun startVoiceListening() {
-        viewModelScope.launch {
-            try {
-                voiceParser.startContinuousListening("en-US") { command ->
-                    when (command.uppercase()) {
-                        "START" -> startTimer()
-                        "PAUSE" -> pauseTimer()
-                        "RESUME" -> resumeTimer()
-                        "STOP" -> stopTimer()
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = "Voice listening failed: ${e.message}")
-                }
-            }
-        }
-    }
-
-    fun startTimer() {
-        if (_uiState.value.isTimerRunning) return
-
-        _uiState.update { it.copy(isTimerRunning = true, error = null) }
-
-        timerJob = viewModelScope.launch {
-            try {
-                while (_uiState.value.isTimerRunning) {
-                    delay(1000)
-                    _uiState.update { currentState ->
-                        val newElapsed = currentState.timeElapsed + 1
-                        val targetTime = currentState.targetTime
-
-                        currentState.copy(
-                            timeElapsed = newElapsed,
-                            isNearTarget = targetTime?.let {
-                                newElapsed >= (it * 0.8) && newElapsed < it
-                            } ?: false,
-                            isOverTarget = targetTime?.let { newElapsed > it } ?: false
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = "Timer error: ${e.message}", isTimerRunning = false)
-                }
-            }
-        }
-
-        // Keep screen on
-        keepScreenOn(true)
-    }
-
-    fun pauseTimer() {
-        _uiState.update { it.copy(isTimerRunning = false) }
-        timerJob?.cancel()
-        keepScreenOn(false)
-    }
-
-    fun resumeTimer() {
-        if (!_uiState.value.isTimerRunning) {
-            startTimer()
-        }
-    }
-
-    fun stopTimer() {
-        _uiState.update { it.copy(isTimerRunning = false) }
-        timerJob?.cancel()
-        keepScreenOn(false)
-    }
-
-    fun resetTimer() {
-        stopTimer()
-        _uiState.update {
-            it.copy(
-                timeElapsed = 0L,
-                isNearTarget = false,
-                isOverTarget = false,
-                hasNotifiedNearTarget = false
-            )
-        }
-    }
-
-    fun saveQuestResults() {
-        val currentState = _uiState.value
-        val quest = currentState.quest ?: return
-
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isSaving = true, error = null) }
-
-                // Update quest status to completed
-                val result = questRepository.updateQuestStatus(quest.id)
-
-                when (result) {
-                    is Resource.Success -> {
-                        _uiState.update {
-                            it.copy(
-                                isSaving = false,
-                                questSaved = true
-                            )
-                        }
-                    }
-                    is Resource.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isSaving = false,
-                                error = result.message ?: "Failed to save quest"
-                            )
-                        }
-                    }
-                    else -> null
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSaving = false,
-                        error = "Save failed: ${e.message}"
-                    )
-                }
-            }
-        }
-    }
-
-    private fun initializeTextToSpeech() {
-        tts = TextToSpeech(application) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
-            }
-        }
-
-        // Listen for state changes to provide voice feedback
-        viewModelScope.launch {
-            uiState.collect { state ->
-                when {
-                    state.isNearTarget && !state.hasNotifiedNearTarget -> {
-                        _uiState.update { it.copy(hasNotifiedNearTarget = true) }
-                        tts?.speak(
-                            "Almost there! Keep going!",
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            "nearTargetNotification"
-                        )
-                    }
-                    state.isOverTarget -> {
-                        tts?.speak(
-                            "You did it! Great job!",
-                            TextToSpeech.QUEUE_FLUSH,
-                            null,
-                            "overTargetNotification"
-                        )
-                    }
-                }
-
-                // Reset notification flag when appropriate
-                if (state.timeElapsed == 0L || (state.targetTime?.let {
-                        state.timeElapsed < (it * 0.8)
-                    } == true)) {
-                    _uiState.update { it.copy(hasNotifiedNearTarget = false) }
-                }
-            }
-        }
-    }
-
-    private fun keepScreenOn(keepOn: Boolean) {
-        // This needs to be handled in the composable with window flags
-        _uiState.update { it.copy(keepScreenOn = keepOn) }
-    }
-
-    fun dismissError() {
-        _uiState.update { it.copy(error = null) }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        voiceParser.stopContinuousListening()
-        timerJob?.cancel()
-        tts?.shutdown()
-    }
-
-}*/
-
 data class QuestStartedUiState(
     val quest: Quests? = null,
     val timeElapsed: Long = 0L,
@@ -602,6 +430,6 @@ data class QuestStartedUiState(
     val keepScreenOn: Boolean = false,
     val lastVoiceCommand: String? = null,
     val connectionMessage: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isLoading: Boolean = false
 )
-

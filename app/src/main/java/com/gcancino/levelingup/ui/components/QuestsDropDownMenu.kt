@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.gcancino.levelingup.R
 import com.gcancino.levelingup.domain.models.Quests
@@ -87,6 +88,5 @@ fun QuestDropDownMenu(
                 navController.navigate("questStared/${questToShow.id}")
             }
         )
-
     }
 }
