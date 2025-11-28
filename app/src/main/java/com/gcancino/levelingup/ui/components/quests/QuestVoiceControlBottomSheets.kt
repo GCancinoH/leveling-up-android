@@ -74,7 +74,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import com.gcancino.levelingup.R
-import com.gcancino.levelingup.core.OnlineVoiceParser
 import com.gcancino.levelingup.domain.models.EnduranceDetails
 import com.gcancino.levelingup.domain.models.Quests
 import kotlinx.coroutines.Job
@@ -85,115 +84,32 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestVoiceControlBottomSheet(
-    quest: Quests,
-    voiceParser: OnlineVoiceParser,
+    viewModel: QuestStartedViewModel,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
-    val voiceState by voiceParser.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val voiceState by viewModel.voiceState.collectAsState()
     val scope = rememberCoroutineScope()
     val scrollable = rememberScrollState()
-
-    // Timer state
-    var timeElapsed by remember { mutableLongStateOf(0L) }
-    var isTimerRunning by remember { mutableStateOf(false) }
-    var timerJob by remember { mutableStateOf<Job?>(null) }
-    var canRecord by remember { mutableStateOf(false) }
 
     val recordAudioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
-            canRecord = isGranted
+            viewModel.onPermissionResult(isGranted)
         }
     )
-
-    // Text-to-Speech setup
-    val context = LocalContext.current
-    val window = (context as? Activity)?.window
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var hasNotifiedNearTarget by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
-            }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            tts?.shutdown()
-        }
-    }
-
-
-    // Timer control functions
-    val startTimer = remember {
-        {
-            if (!isTimerRunning) {
-                isTimerRunning = true
-                timerJob = scope.launch {
-                    while (isTimerRunning) {
-                        delay(1000)
-                        timeElapsed++
-                    }
-                }
-            }
-        }
-    }
-
-    val stopTimer = remember {
-        {
-            isTimerRunning = false
-            timerJob?.cancel()
-        }
-    }
-
-    val questDetails = quest.details
 
     // Permission handling
     LaunchedEffect(Unit) {
         recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
     }
 
-    // Voice command handling
-    LaunchedEffect(canRecord) {
-        if (canRecord) {
-            voiceParser.startContinuousListening("en-US") { command ->
-                when (command) {
-                    "START" -> {
-                        startTimer()
-                        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                    "PAUSE" -> stopTimer()
-                    "RESUME" -> startTimer()
-                    "STOP" -> {
-                        stopTimer()
-                        window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                }
-            }
-        } else {
-            Log.d("VoiceControl", "Microphone permission denied")
-        }
-    }
-
-    // Cleanup
-    DisposableEffect(Unit) {
-        onDispose {
-            voiceParser.stopContinuousListening()
-            timerJob?.cancel()
-        }
-    }
-
     ModalBottomSheet(
-        onDismissRequest = {
-            voiceParser.stopContinuousListening()
-        },
+        onDismissRequest = onDismiss,
         sheetState = bottomSheetState,
         containerColor = Color(0xFF0A0A0A),
         contentColor = Color.White,
@@ -255,7 +171,7 @@ fun QuestVoiceControlBottomSheet(
 
             // Quest Title
             Text(
-                text = quest.title ?: "Unknown Quest",
+                text = uiState.quest?.title ?: "Unknown Quest",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -266,10 +182,6 @@ fun QuestVoiceControlBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Timer Display with animations
-            val targetTime = quest.details?.targetTime?.let { parseTargetTime(it) }
-            val isNearTarget = targetTime?.let { timeElapsed >= (it * 0.8) && timeElapsed < it } ?: false
-            val isOverTarget = targetTime?.let { timeElapsed > it } ?: false
-
             val infiniteTransition = rememberInfiniteTransition()
             val pulseAlpha by infiniteTransition.animateFloat(
                 initialValue = 0.7f,
@@ -289,50 +201,20 @@ fun QuestVoiceControlBottomSheet(
                 )
             )
 
-            // Voice feedback for near target
-            LaunchedEffect(isNearTarget) {
-                if (isNearTarget && !hasNotifiedNearTarget) {
-                    hasNotifiedNearTarget = true
-                    tts?.speak(
-                        "Almost there! Keep going!",
-                        TextToSpeech.QUEUE_FLUSH,
-                        null,
-                        "nearTargetNotification"
-                    )
-                }
-            }
-
-            LaunchedEffect(isOverTarget) {
-                if (isOverTarget) {
-                    tts?.speak(
-                        "You fucking did it! Great job!",
-                        TextToSpeech.QUEUE_FLUSH,
-                        null,
-                        "overTargetNotification"
-                    )
-                }
-            }
-
-            // Reset notification flag when timer restarts or goes below threshold
-            LaunchedEffect(timeElapsed) {
-                if (timeElapsed == 0L || (targetTime?.let { timeElapsed < (it * 0.8) } == true)) {
-                    hasNotifiedNearTarget = false
-                }
-            }
             Surface(
                 modifier = Modifier
                     .size(200.dp)
                     .offset(
-                        x = if (isNearTarget) shakeOffset.dp else 0.dp
+                        x = if (uiState.isNearTarget) shakeOffset.dp else 0.dp
                     ),
                 color = Color(0xFF1A1A1A),
                 shape = CircleShape,
                 border = BorderStroke(
                     width = 3.dp,
                     color = when {
-                        isOverTarget -> Color(0xFF00FF7F).copy(alpha = pulseAlpha) // Bright green for achievement
-                        isNearTarget -> Color(0xFFFFD700).copy(alpha = pulseAlpha)
-                        isTimerRunning -> Color(0xFF00D4AA)
+                        uiState.isOverTarget -> Color(0xFF00FF7F).copy(alpha = pulseAlpha) // Bright green for achievement
+                        uiState.isNearTarget -> Color(0xFFFFD700).copy(alpha = pulseAlpha)
+                        uiState.isTimerRunning -> Color(0xFF00D4AA)
                         else -> Color(0xFF404040)
                     }
                 )
@@ -343,49 +225,49 @@ fun QuestVoiceControlBottomSheet(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = formatTime(timeElapsed),
+                        text = formatTime(uiState.timeElapsed),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 32.sp
                         ),
                         color = when {
-                            isOverTarget -> Color(0xFF00FF7F) // Bright green for success
-                            isNearTarget -> Color(0xFFFFD700)
-                            isTimerRunning -> Color(0xFF00D4AA)
+                            uiState.isOverTarget -> Color(0xFF00FF7F) // Bright green for success
+                            uiState.isNearTarget -> Color(0xFFFFD700)
+                            uiState.isTimerRunning -> Color(0xFF00D4AA)
                             else -> Color.White
                         }
                     )
 
                     Text(
                         text = when {
-                            isOverTarget -> "GREAT JOB!"
-                            isNearTarget -> "ALMOST THERE!"
-                            isTimerRunning -> "RUNNING"
+                            uiState.isOverTarget -> "GREAT JOB!"
+                            uiState.isNearTarget -> "ALMOST THERE!"
+                            uiState.isTimerRunning -> "RUNNING"
                             else -> "STOPPED"
                         },
                         style = MaterialTheme.typography.bodySmall.copy(
                             letterSpacing = 1.sp,
-                            fontWeight = if (isOverTarget || isNearTarget) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (uiState.isOverTarget || uiState.isNearTarget) FontWeight.Bold else FontWeight.Normal
                         ),
                         color = when {
-                            isOverTarget -> Color(0xFF00FF7F)
-                            isNearTarget -> Color(0xFFFFD700)
+                            uiState.isOverTarget -> Color(0xFF00FF7F)
+                            uiState.isNearTarget -> Color(0xFFFFD700)
                             else -> Color(0xFFB0B0B0)
                         }
                     )
 
                     // Progress indicator for target time
-                    targetTime?.let { target ->
+                    uiState.targetTime?.let { target ->
                         Spacer(modifier = Modifier.height(8.dp))
-                        val progress = (timeElapsed.toFloat() / target).coerceAtMost(1f)
+                        val progress = (uiState.timeElapsed.toFloat() / target).coerceAtMost(1f)
                         LinearProgressIndicator(
                             progress = { progress },
                             modifier = Modifier
                                 .width(120.dp)
                                 .height(4.dp),
                             color = when {
-                                isOverTarget -> Color(0xFF00FF7F)
-                                isNearTarget -> Color(0xFFFFD700)
+                                uiState.isOverTarget -> Color(0xFF00FF7F)
+                                uiState.isNearTarget -> Color(0xFFFFD700)
                                 else -> Color(0xFF00D4AA)
                             },
                             trackColor = Color(0xFF404040),
@@ -394,43 +276,9 @@ fun QuestVoiceControlBottomSheet(
                     }
                 }
             }
-            /*Surface(
-                modifier = Modifier
-                    .size(150.dp),
-                color = Color(0xFF1A1A1A),
-                shape = CircleShape,
-                border = BorderStroke(
-                    width = 3.dp,
-                    color = if (isTimerRunning) Color(0xFF00D4AA) else Color(0xFF404040)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = formatTime(timeElapsed),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
-                        ),
-                        color = if (isTimerRunning) Color(0xFF00D4AA) else Color.White
-                    )
-
-                    Text(
-                        text = if (isTimerRunning) "RUNNING" else "STOPPED",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            letterSpacing = 1.sp
-                        ),
-                        color = Color(0xFFB0B0B0)
-                    )
-                }
-            }*/
-
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (quest.details?.isStrengthQuest() == true) {
+            if (uiState.quest?.details?.isStrengthQuest() == true) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF2A1A2A),
@@ -461,7 +309,7 @@ fun QuestVoiceControlBottomSheet(
                             )
                         }
 
-                        quest.details.targetTime?.let { targetTime ->
+                        uiState.quest?.details?.targetTime?.let { targetTime ->
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Target: $targetTime seconds",
@@ -478,7 +326,7 @@ fun QuestVoiceControlBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Permission denied message
-            if (!canRecord) {
+            if (!uiState.canRecord) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF2D1B1B),
@@ -606,7 +454,7 @@ fun QuestVoiceControlBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Voice Commands Guide (only show if permission granted)
-            if (canRecord) {
+            if (uiState.canRecord) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color(0xFF1A2A1A),
@@ -654,22 +502,22 @@ fun QuestVoiceControlBottomSheet(
                 // Manual Controls
                 Button(
                     onClick = {
-                        if (isTimerRunning) {
-                            stopTimer()
+                        if (uiState.isTimerRunning) {
+                            viewModel.stopTimer()
                         } else {
-                            startTimer()
+                            viewModel.startTimer()
                         }
                     },
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isTimerRunning) Color(0xFFE74C3C) else Color(0xFF00D4AA)
+                        containerColor = if (uiState.isTimerRunning) Color(0xFFE74C3C) else Color(0xFF00D4AA)
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (isTimerRunning) "STOP" else "START",
+                        text = if (uiState.isTimerRunning) "STOP" else "START",
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -679,11 +527,7 @@ fun QuestVoiceControlBottomSheet(
 
                 // Done Button
                 OutlinedButton(
-                    onClick = {
-                        voiceParser.stopContinuousListening()
-                        timerJob?.cancel()
-                        onDismiss()
-                    },
+                    onClick = onDismiss,
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),

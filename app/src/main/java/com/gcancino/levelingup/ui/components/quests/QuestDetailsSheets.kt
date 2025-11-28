@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.R
-import com.gcancino.levelingup.core.IVoiceToTextParser
 import com.gcancino.levelingup.ui.components.QuestTimerCircularProgressBar
 import com.gcancino.levelingup.ui.theme.Blue40
 import com.gcancino.levelingup.ui.theme.purpleBlueGradient
@@ -56,6 +55,7 @@ import com.gcancino.levelingup.ui.theme.purpleBlueGradient
 fun QuestDetailBottomSheet(
     modifier: Modifier = Modifier,
     quest: Quests,
+    viewModel: QuestStartedViewModel,
     onDismiss: () -> Unit,
     onAccept: () -> Unit,
 ) {
@@ -254,8 +254,7 @@ fun QuestDetailBottomSheet(
     when(expandedDropDown) {
         true -> {
             QuestVoiceControlBottomSheet(
-                quest = quest,
-                voiceParser = IVoiceToTextParser(LocalContext.current),
+                viewModel = viewModel,
                 onDismiss = onDismiss
             )
         }

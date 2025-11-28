@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.models.VoiceToTextParserState
 import java.util.Locale
@@ -71,7 +72,7 @@ import java.util.Locale
 @Composable
 fun QuestStartedScreen(
     questID: String,
-    viewModel: QuestStartedViewModel,
+    viewModel: QuestStartedViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onQuestTitleLoaded: (String) -> Unit = {},
 ) {
