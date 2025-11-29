@@ -181,10 +181,6 @@ class QuestStartedViewModel @Inject constructor(
     }
 
     private fun startVoiceListening() {
-        if (currentVoiceParser == null) {
-            setupVoiceRecognition()
-        }
-
         viewModelScope.launch {
             try {
                 currentVoiceParser?.startContinuousListening("en-US") { command ->

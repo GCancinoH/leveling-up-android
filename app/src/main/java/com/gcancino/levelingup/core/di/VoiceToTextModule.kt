@@ -8,9 +8,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.gcancino.levelingup.utils.AssetsUtil
 import dagger.hilt.components.SingletonComponent
 import org.vosk.Model
-import java.io.IOException
 import javax.inject.Singleton
 import javax.inject.Named
 
@@ -23,9 +23,14 @@ object VoiceToTextModule {
     @Provides
     @Singleton
     fun provideVoskModel(@ApplicationContext context: Context): Model? {
-        return try {
-            Model(context.assets, VOSK_MODEL_PATH)
-        } catch (e: IOException) {
+        val modelPath = AssetsUtil.unpackAssetsFolder(context, VOSK_MODEL_PATH)
+        return if (modelPath != null) {
+            try {
+                Model(modelPath)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
             null
         }
     }
