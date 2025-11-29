@@ -59,7 +59,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.gcancino.levelingup.domain.models.VoiceToTextParserState
 import java.util.Locale
 
 @ExperimentalMaterial3Api
@@ -71,7 +70,6 @@ fun QuestStartedScreen(
     onQuestTitleLoaded: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val voiceState by viewModel.voiceState.collectAsState()
     val context = LocalContext.current
     val window = (context as? Activity)?.window
 
@@ -184,9 +182,7 @@ fun QuestStartedScreen(
 
             // Connection Status Indicator
             ConnectionStatusBar(
-                isOnline = uiState.isOnline,
-                onForceOffline = { viewModel.forceOfflineMode() },
-                onForceOnline = { viewModel.forceOnlineMode() }
+                isOnline = uiState.isOnline
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +209,7 @@ fun QuestStartedScreen(
             // Voice Control Section
             VoiceControlSection(
                 canRecord = uiState.canRecord,
-                voiceState = voiceState,
+                voiceState = uiState,
                 lastCommand = uiState.lastVoiceCommand,
                 onRequestPermission = {
                     recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
@@ -242,9 +238,7 @@ fun QuestStartedScreen(
 
 @Composable
 private fun ConnectionStatusBar(
-    isOnline: Boolean,
-    onForceOffline: () -> Unit,
-    onForceOnline: () -> Unit
+    isOnline: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -257,47 +251,25 @@ private fun ConnectionStatusBar(
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(
-                            color = if (isOnline) Color(0xFF00D4AA) else Color(0xFFFFB347),
-                            shape = CircleShape
-                        )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isOnline) "Online Voice Recognition" else "Offline Voice Recognition",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = if (isOnline) Color(0xFF00D4AA) else Color(0xFFFFB347)
-                )
-            }
-
-            // Debug buttons (remove in production)
-            Row {
-                TextButton(
-                    onClick = onForceOffline,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color(0xFFFFB347)
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(
+                        color = if (isOnline) Color(0xFF00D4AA) else Color(0xFFFFB347),
+                        shape = CircleShape
                     )
-                ) {
-                    Text("Offline", style = MaterialTheme.typography.labelSmall)
-                }
-                TextButton(
-                    onClick = onForceOnline,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color(0xFF00D4AA)
-                    )
-                ) {
-                    Text("Online", style = MaterialTheme.typography.labelSmall)
-                }
-            }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = if (isOnline) "Online Voice Recognition" else "Offline Voice Recognition",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = if (isOnline) Color(0xFF00D4AA) else Color(0xFFFFB347)
+            )
         }
     }
 }
@@ -457,7 +429,7 @@ private fun StrengthQuestCard(targetTime: Int?) {
 @Composable
 private fun VoiceControlSection(
     canRecord: Boolean,
-    voiceState: VoiceToTextParserState,
+    voiceState: QuestStartedUiState,
     lastCommand: String?,
     onRequestPermission: () -> Unit
 ) {
@@ -515,7 +487,7 @@ private fun PermissionDeniedCard(onRequestPermission: () -> Unit) {
 
 @Composable
 private fun VoiceStatusCard(
-    voiceState: VoiceToTextParserState,
+    voiceState: QuestStartedUiState,
     lastCommand: String?
 ) {
     Surface(
