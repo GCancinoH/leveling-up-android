@@ -2,7 +2,6 @@ package com.gcancino.levelingup.utils
 
 import android.content.Context
 import android.util.Log
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -27,7 +26,7 @@ object AssetsUtil {
         // For a production app, a more robust version check might be needed.
         val modelCheckFile = File(outputDir, "am/final.mdl")
         if (modelCheckFile.exists()) {
-            Timber.tag(TAG).d("Model folder '$assetFolderName' already exists. Skipping unpacking.")
+            Log.d(TAG, "Model folder '$assetFolderName' already exists. Skipping unpacking.")
             return outputDir.absolutePath
         }
 
@@ -36,17 +35,20 @@ object AssetsUtil {
             outputDir.deleteRecursively()
         }
         if (!outputDir.mkdirs()) {
-            Timber.tag(TAG).e("Failed to create directory: ${outputDir.absolutePath}")
+            Log.e(TAG, "Failed to create directory: ${outputDir.absolutePath}")
             return null
         }
 
-        Timber.tag(TAG)
-            .d("Starting to unpack model '$assetFolderName' to '${outputDir.absolutePath}'.")
+        Log.d(TAG, "Starting to unpack model '$assetFolderName' to '${outputDir.absolutePath}'.")
 
         try {
             val assetManager = context.assets
             // Recursively copy files from the assets folder to the output directory
             copyAssetFolder(assetManager, assetFolderName, outputDir.absolutePath)
+            Log.d(TAG, "Successfully unpacked model '$assetFolderName'.")
+            return outputDir.absolutePath
+        } catch (e: IOException) {
+            Log.e(TAG, "Failed to unpack model '$assetFolderName'.", e)
             Timber.tag(TAG).d("Successfully unpacked model '$assetFolderName'.")
             return outputDir.absolutePath
         } catch (e: IOException) {

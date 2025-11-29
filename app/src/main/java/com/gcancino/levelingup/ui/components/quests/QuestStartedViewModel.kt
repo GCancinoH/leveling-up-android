@@ -7,10 +7,8 @@ import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gcancino.levelingup.core.IVoiceToTextParser
-import com.gcancino.levelingup.core.OnlineVoiceParser
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.core.voiceParser.OfflineVoiceParser
+import com.gcancino.levelingup.core.di.VoiceParserFactory
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.models.VoiceToTextParserState
 import com.gcancino.levelingup.domain.repositories.QuestRepository
@@ -23,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.vosk.Model
 import java.util.Locale
 import javax.inject.Inject
 
@@ -31,29 +28,43 @@ import javax.inject.Inject
 class QuestStartedViewModel @Inject constructor(
     private val questRepository: QuestRepository,
     private val application: Application,
-    @ApplicationContext private val context: Context
+    private val voiceParserFactory: VoiceParserFactory
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuestStartedUiState())
     val uiState: StateFlow<QuestStartedUiState> = _uiState.asStateFlow()
 
     // Dynamic voice parser based on connectivity
-    private var currentVoiceParser: IVoiceToTextParser? = null
-    private val _voiceState = MutableStateFlow(VoiceToTextParserState())
-    val voiceState: StateFlow<VoiceToTextParserState> = _voiceState.asStateFlow()
+    private var currentVoiceParser = voiceParserFactory.create()
 
     private var timerJob: Job? = null
     private var tts: TextToSpeech? = null
     private var connectivityJob: Job? = null
+    private var voiceStateCollectorJob: Job? = null
 
     private val connectivityManager = application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val networkCallback: ConnectivityManager.NetworkCallback
 
     private var voskModel: Model? = null
     private val modelInitialized = MutableStateFlow(false)
 
     init {
         initializeTextToSpeech()
-        startConnectivityMonitoring()
+
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                _uiState.update { it.copy(isOnline = true) }
+                switchVoiceParser()
+            }
+
+            override fun onLost(network: android.net.Network) {
+                _uiState.update { it.copy(isOnline = false) }
+                switchVoiceParser()
+            }
+        }
+
+        connectivityManager.registerDefaultNetworkCallback(networkCallback)
+        switchVoiceParser()
     }
 
     fun loadQuest(questId: String) {
@@ -115,51 +126,33 @@ class QuestStartedViewModel @Inject constructor(
         }
     }
 
-    private fun startConnectivityMonitoring() {
-        connectivityJob = viewModelScope.launch {
-            while (true) {
-                val wasOnline = _uiState.value.isOnline
-                val isCurrentlyOnline = isNetworkAvailable()
-
-                if (wasOnline != isCurrentlyOnline) {
-                    _uiState.update { it.copy(isOnline = isCurrentlyOnline) }
-
-                    // Switch voice parser if currently listening
-                    if (_uiState.value.canRecord && currentVoiceParser != null) {
-                        switchVoiceParser()
-                    }
-                }
-
-                delay(5000) // Check every 5 seconds
-            }
-        }
-    }
 
     private fun setupVoiceRecognition() {
-        val isOnline = isNetworkAvailable()
-        _uiState.update { it.copy(isOnline = isOnline) }
-
         // Clean up existing parser
         currentVoiceParser?.cleanup()
 
-        currentVoiceParser = if (isOnline) {
-            OnlineVoiceParser(application.baseContext)
-        } else {
-            // Check if offline model is available
-            if (offlineModel != null) {
-                OfflineVoiceParser(application.baseContext, offlineModel)
-            } else {
-                _uiState.update {
-                    it.copy(error = "No internet connection and offline model not available")
-                }
-                return
+        currentVoiceParser = voiceParserFactory.create()
+
+        if (currentVoiceParser == null) {
+            _uiState.update {
+                it.copy(error = "No voice parser available")
             }
+            return
         }
 
         // Observe voice parser state
-        viewModelScope.launch {
+        voiceStateCollectorJob?.cancel()
+        voiceStateCollectorJob = viewModelScope.launch {
             currentVoiceParser?.state?.collect { voiceState ->
-                _voiceState.update { voiceState }
+                _uiState.update {
+                    it.copy(
+                        isSpeaking = voiceState.isSpeaking,
+                        spokenText = voiceState.spokenText,
+                        partialText = voiceState.partialText,
+                        voiceLevel = voiceState.voiceLevel,
+                        error = voiceState.error
+                    )
+                }
             }
         }
     }
@@ -192,10 +185,6 @@ class QuestStartedViewModel @Inject constructor(
     }
 
     private fun startVoiceListening() {
-        if (currentVoiceParser == null) {
-            setupVoiceRecognition()
-        }
-
         viewModelScope.launch {
             try {
                 currentVoiceParser?.startContinuousListening("en-US") { command ->
@@ -221,15 +210,6 @@ class QuestStartedViewModel @Inject constructor(
         _uiState.update { it.copy(lastVoiceCommand = command) }
     }
 
-    private fun isNetworkAvailable(): Boolean {
-        return try {
-            val activeNetwork = connectivityManager.activeNetwork
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
-            networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } catch (e: Exception) {
-            false
-        }
-    }
 
     fun startTimer() {
         if (_uiState.value.isTimerRunning) return
@@ -384,31 +364,6 @@ class QuestStartedViewModel @Inject constructor(
         _uiState.update { it.copy(connectionMessage = null) }
     }
 
-    // Manual switch for testing or user preference
-    fun forceOfflineMode() {
-        currentVoiceParser?.stopContinuousListening()
-        if (offlineModel != null) {
-            currentVoiceParser = OfflineVoiceParser(application.baseContext, offlineModel)
-            if (_uiState.value.canRecord) {
-                startVoiceListening()
-            }
-            _uiState.update { it.copy(isOnline = false, connectionMessage = "Forced offline mode") }
-        }
-    }
-
-    fun forceOnlineMode() {
-        if (isNetworkAvailable()) {
-            currentVoiceParser?.stopContinuousListening()
-            currentVoiceParser = OnlineVoiceParser(application.baseContext)
-            if (_uiState.value.canRecord) {
-                startVoiceListening()
-            }
-            _uiState.update { it.copy(isOnline = true, connectionMessage = "Forced online mode") }
-        } else {
-            _uiState.update { it.copy(error = "Cannot switch to online mode: No internet connection") }
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
         currentVoiceParser?.stopContinuousListening()
@@ -416,23 +371,33 @@ class QuestStartedViewModel @Inject constructor(
         timerJob?.cancel()
         connectivityJob?.cancel()
         tts?.shutdown()
+        connectivityManager.unregisterNetworkCallback(networkCallback)
     }
 }
 
 data class QuestStartedUiState(
+    // Quest and Timer State
     val quest: Quests? = null,
     val timeElapsed: Long = 0L,
     val targetTime: Long? = null,
     val isTimerRunning: Boolean = false,
-    val canRecord: Boolean = false,
-    val isOnline: Boolean = true,
     val isNearTarget: Boolean = false,
     val isOverTarget: Boolean = false,
     val hasNotifiedNearTarget: Boolean = false,
     val isSaving: Boolean = false,
     val questSaved: Boolean = false,
     val keepScreenOn: Boolean = false,
+
+    // Voice Recognition State
+    val canRecord: Boolean = false,
+    val isSpeaking: Boolean = false,
+    val spokenText: String = "",
+    val partialText: String = "",
+    val voiceLevel: Float = 0f,
     val lastVoiceCommand: String? = null,
+
+    // General UI State
+    val isOnline: Boolean = true,
     val connectionMessage: String? = null,
     val error: String? = null,
     val isLoading: Boolean = false
