@@ -31,7 +31,7 @@ import com.gcancino.levelingup.ui.components.quests.QuestDetailBottomSheet
 fun QuestDropDownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    viewModel: QuestMenuViewModel,
+    viewModel: QuestMenuViewModel = hiltViewModel(),
     navController: NavHostController
 ) {
     val quests by viewModel.quests.collectAsState()

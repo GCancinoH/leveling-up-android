@@ -13,6 +13,7 @@ import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.models.VoiceToTextParserState
 import com.gcancino.levelingup.domain.repositories.QuestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,9 @@ class QuestStartedViewModel @Inject constructor(
 
     private val connectivityManager = application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val networkCallback: ConnectivityManager.NetworkCallback
+
+    private var voskModel: Model? = null
+    private val modelInitialized = MutableStateFlow(false)
 
     init {
         initializeTextToSpeech()
