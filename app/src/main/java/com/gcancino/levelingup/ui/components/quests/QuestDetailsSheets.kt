@@ -254,9 +254,9 @@ fun QuestDetailBottomSheet(
 
     when(expandedDropDown) {
         true -> {
-            QuestVoiceControlBottomSheet(
-                viewModel = viewModel,
-                onDismiss = onDismiss
+            QuestStartedScreen(
+                questID = quest.id,
+                onNavigateBack = onDismiss
             )
         }
         false -> {}

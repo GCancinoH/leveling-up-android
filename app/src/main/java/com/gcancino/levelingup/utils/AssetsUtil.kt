@@ -2,6 +2,7 @@ package com.gcancino.levelingup.utils
 
 import android.content.Context
 import android.util.Log
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -45,10 +46,10 @@ object AssetsUtil {
             val assetManager = context.assets
             // Recursively copy files from the assets folder to the output directory
             copyAssetFolder(assetManager, assetFolderName, outputDir.absolutePath)
-            Log.d(TAG, "Successfully unpacked model '$assetFolderName'.")
+            Timber.tag(TAG).d("Successfully unpacked model '$assetFolderName'.")
             return outputDir.absolutePath
         } catch (e: IOException) {
-            Log.e(TAG, "Failed to unpack model '$assetFolderName'.", e)
+            Timber.tag(TAG).e(e, "Failed to unpack model '$assetFolderName'.")
             Timber.tag(TAG).d("Successfully unpacked model '$assetFolderName'.")
             return outputDir.absolutePath
         } catch (e: IOException) {

@@ -131,7 +131,7 @@ fun Navigation() {
                     )
                 }
                 composable(
-                    route = "questStared/{questID}",
+                    route = "questStarted/{questID}",
                     arguments = listOf(
                         navArgument("questID") {
                             type = NavType.StringType

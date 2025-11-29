@@ -71,7 +71,6 @@ fun QuestStartedScreen(
     onQuestTitleLoaded: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val voiceState by viewModel.voiceState.collectAsState()
     val context = LocalContext.current
     val window = (context as? Activity)?.window
 
@@ -184,9 +183,7 @@ fun QuestStartedScreen(
 
             // Connection Status Indicator
             ConnectionStatusBar(
-                isOnline = uiState.isOnline,
-                onForceOffline = { viewModel.forceOfflineMode() },
-                onForceOnline = { viewModel.forceOnlineMode() }
+                isOnline = uiState.isOnline
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +210,7 @@ fun QuestStartedScreen(
             // Voice Control Section
             VoiceControlSection(
                 canRecord = uiState.canRecord,
-                voiceState = voiceState,
+                voiceState = uiState,
                 lastCommand = uiState.lastVoiceCommand,
                 onRequestPermission = {
                     recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
@@ -243,8 +240,6 @@ fun QuestStartedScreen(
 @Composable
 private fun ConnectionStatusBar(
     isOnline: Boolean,
-    onForceOffline: () -> Unit,
-    onForceOnline: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -277,26 +272,6 @@ private fun ConnectionStatusBar(
                     ),
                     color = if (isOnline) Color(0xFF00D4AA) else Color(0xFFFFB347)
                 )
-            }
-
-            // Debug buttons (remove in production)
-            Row {
-                TextButton(
-                    onClick = onForceOffline,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color(0xFFFFB347)
-                    )
-                ) {
-                    Text("Offline", style = MaterialTheme.typography.labelSmall)
-                }
-                TextButton(
-                    onClick = onForceOnline,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = Color(0xFF00D4AA)
-                    )
-                ) {
-                    Text("Online", style = MaterialTheme.typography.labelSmall)
-                }
             }
         }
     }
@@ -457,7 +432,7 @@ private fun StrengthQuestCard(targetTime: Int?) {
 @Composable
 private fun VoiceControlSection(
     canRecord: Boolean,
-    voiceState: VoiceToTextParserState,
+    voiceState: QuestStartedUiState,
     lastCommand: String?,
     onRequestPermission: () -> Unit
 ) {
@@ -515,7 +490,7 @@ private fun PermissionDeniedCard(onRequestPermission: () -> Unit) {
 
 @Composable
 private fun VoiceStatusCard(
-    voiceState: VoiceToTextParserState,
+    voiceState: QuestStartedUiState,
     lastCommand: String?
 ) {
     Surface(

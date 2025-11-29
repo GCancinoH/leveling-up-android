@@ -13,9 +13,9 @@ interface IVoiceParserFactory {
 }
 
 class VoiceParserFactory @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @Named("online") private val onlineParser: IVoiceToTextParser,
-    @Named("offline") private val offlineParser: IVoiceToTextParser?
+    @param:ApplicationContext private val context: Context,
+    @param:Named("online") private val onlineParser: IVoiceToTextParser,
+    @param:Named("offline") private val offlineParser: IVoiceToTextParser?
 ) : IVoiceParserFactory {
 
     private val connectivityManager =

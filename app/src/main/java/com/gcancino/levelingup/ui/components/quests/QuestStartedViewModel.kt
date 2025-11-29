@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
+import org.vosk.Model
 
 @HiltViewModel
 class QuestStartedViewModel @Inject constructor(

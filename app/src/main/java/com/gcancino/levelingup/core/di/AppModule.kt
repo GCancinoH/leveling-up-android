@@ -19,7 +19,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
+    /*@Provides
     @Singleton
     fun provideVoskModel(@ApplicationContext context: Context): Model {
         val modelDir = File(context.filesDir, "model")
@@ -57,5 +57,5 @@ object AppModule {
 
         // Return the model after ensuring it's unpacked
         return Model(modelDir.absolutePath)
-    }
+    }*/
 }
