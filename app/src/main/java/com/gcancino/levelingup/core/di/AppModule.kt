@@ -10,7 +10,9 @@ import dagger.hilt.components.SingletonComponent
 import org.vosk.Model
 import org.vosk.android.StorageService
 import timber.log.Timber
+import java.io.File
 import java.io.IOException
+import java.util.concurrent.CountDownLatch
 import javax.inject.Singleton
 
 @Module
@@ -18,19 +20,42 @@ import javax.inject.Singleton
 object AppModule {
 
     @Provides
-    @Singleton // Use @Singleton to ensure only one instance of the model is created
+    @Singleton
     fun provideVoskModel(@ApplicationContext context: Context): Model {
-        val assetModelPath = "assets/model"
-        val modelName = "model"
+        val modelDir = File(context.filesDir, "model")
 
-        StorageService.unpack(
-            context, "model-en-us", "model",
-            { model: Model? ->
-                Timber.tag("Vosk").d("Model loaded successfully")
-            },
-            { exception: IOException? -> Timber.tag("Vosk").e("Failed to unpack the model%s", exception!!.message) })
+        // Check if model is already unpacked
+        if (!modelDir.exists()) {
+            // Unpack synchronously using a blocking approach
+            val latch = CountDownLatch(1)
+            var modelInstance: Model? = null
+            var error: IOException? = null
 
-        // Step 3: Instantiate the Model with the correct file path.
-        return Model(assetModelPath)
+            StorageService.unpack(
+                context,
+                "model-en-us",
+                "model",
+                { model: Model? ->
+                    modelInstance = model
+                    Timber.tag("Vosk").d("Model loaded successfully")
+                    latch.countDown()
+                },
+                { exception: IOException? ->
+                    error = exception
+                    Timber.tag("Vosk").e("Failed to unpack model: ${exception?.message}")
+                    latch.countDown()
+                }
+            )
+
+            // Wait for unpacking to complete
+            latch.await()
+
+            if (error != null) {
+                throw IOException("Failed to create Vosk model", error)
+            }
+        }
+
+        // Return the model after ensuring it's unpacked
+        return Model(modelDir.absolutePath)
     }
 }

@@ -20,6 +20,7 @@ import com.gcancino.levelingup.ui.components.QuestDropDownMenu
 @Composable
 fun DashboardTopBar(
     expandDropDown: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     navController: NavHostController
 ) {
     CenterAlignedTopAppBar(
@@ -31,7 +32,7 @@ fun DashboardTopBar(
         },
         actions = {
             IconButton(
-                onClick = { expandDropDown }
+                onClick = { onExpandedChange(true) }
             ) {
                 Icon(
                     modifier = Modifier.size(20.dp),
@@ -41,8 +42,7 @@ fun DashboardTopBar(
             }
             QuestDropDownMenu(
                 expanded = expandDropDown,
-                onDismissRequest = { expandDropDown },
-                viewModel = hiltViewModel(),
+                onDismissRequest = { onExpandedChange(false) },
                 navController = navController
             )
         }
