@@ -16,11 +16,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "leveling_up_db"
-        ).build()
+        return AppDatabase.getInstance(context)
     }
 
     @Provides

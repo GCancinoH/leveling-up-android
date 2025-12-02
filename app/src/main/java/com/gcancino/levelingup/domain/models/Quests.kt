@@ -30,6 +30,8 @@ enum class QuestType {
 }
 
 data class QuestRewards(
+    val baseXp: Int? = null,
+    val baseCoins: Int? = null,
     val xp: Int? = null,
     val coins: Int? = null,
     val attributes: QuestAttributes? = null
@@ -47,6 +49,9 @@ data class QuestAttributes(
 data class QuestDetails(
     val type: QuestType? = null,
     val progressionIncrement: Float? = null,
+    val defaultTarget: Int? = null,
+    val maxTarget: Int? = null,
+    val isFirstAttempt: Boolean? = false,
 
     // Endurance fields
     val targetTime: Int? = null,

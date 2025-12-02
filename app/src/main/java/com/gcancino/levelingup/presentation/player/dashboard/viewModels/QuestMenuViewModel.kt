@@ -8,6 +8,7 @@ import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.dao.QuestDao
 import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.repositories.QuestRepository
+import com.gcancino.levelingup.domain.usecase.UpdateQuestProgressUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class QuestMenuViewModel @Inject constructor(
-    private val repository: QuestRepository
+    private val repository: QuestRepository,
+    private val updateQuestProgressUseCase: UpdateQuestProgressUseCase
 ) : ViewModel() {
 
     private val _quests = MutableStateFlow<List<Quests>>(emptyList())
@@ -61,6 +63,13 @@ class QuestMenuViewModel @Inject constructor(
 
             }
 
+        }
+    }
+
+    fun updateQuestProgress(quest: Quests, achievedValue: Int) {
+        viewModelScope.launch {
+            val updatedQuest = updateQuestProgressUseCase(quest, achievedValue)
+            repository.updateQuest(updatedQuest)
         }
     }
 }

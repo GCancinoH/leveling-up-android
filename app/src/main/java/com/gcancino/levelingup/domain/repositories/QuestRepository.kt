@@ -10,4 +10,5 @@ interface QuestRepository {
     fun getNotStartedQuests(): Flow<List<Quests>>
     suspend fun getQuestByQuestID(questID: String): Resource<Quests>
     suspend fun updateQuestStatus(questID: String) : Resource<Unit>
+    suspend fun updateQuest(quest: Quests): Resource<Unit>
 }

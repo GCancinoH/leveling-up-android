@@ -40,4 +40,6 @@ interface QuestDao {
     @Query("UPDATE quests SET status = 'COMPLETED' WHERE id = :questId")
     suspend fun updateQuestStatusToCompleted(questId: String): Int
 
+    @Update
+    suspend fun updateQuest(quest: QuestEntity)
 }

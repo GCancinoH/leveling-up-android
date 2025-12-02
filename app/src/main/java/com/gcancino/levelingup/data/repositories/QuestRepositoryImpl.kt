@@ -161,4 +161,13 @@ class QuestRepositoryImpl @Inject constructor(
             Resource.Error(e.message ?: "Unknown error occurred")
         }
     }
+
+    override suspend fun updateQuest(quest: Quests): Resource<Unit> {
+        return try {
+            questDao.updateQuest(quest.toEntity())
+            Resource.Success(Unit)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Unknown error occurred")
+        }
+    }
 }

@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gcancino.levelingup.data.local.database.converters.PlayerConverters
 import com.gcancino.levelingup.data.local.database.converters.QuestConverters
 import com.gcancino.levelingup.data.local.database.dao.BodyCompositionDao
@@ -25,7 +27,7 @@ import com.gcancino.levelingup.data.local.database.entities.QuestEntity
         PlayerEntity::class, PlayerAttributesEntity::class, PlayerProgressEntity::class, PlayerStreakEntity::class,
         BodyCompositionEntity::class, QuestEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(PlayerConverters::class, QuestConverters::class)
@@ -52,10 +54,16 @@ abstract class AppDatabase : RoomDatabase() {
                                 context.applicationContext,
                                 AppDatabase::class.java,
                                 "app_database"
-                            ).fallbackToDestructiveMigration(false)
+                            ).addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE quests ADD COLUMN details TEXT")
             }
         }
     }
