@@ -85,6 +85,7 @@ fun QuestDropDownMenu(
             quest = questToShow,
             onDismiss = { showQuestDetailsDialog = null },
             onAccept = {
+                viewModel.updateQuestStatus(questToShow.id)
                 navController.navigate("questStarted/${questToShow.id}")
             }
         )
