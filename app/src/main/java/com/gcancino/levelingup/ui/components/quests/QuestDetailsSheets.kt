@@ -64,8 +64,6 @@ fun QuestDetailBottomSheet(
         skipPartiallyExpanded = true
     )
 
-    var expandedDropDown by remember { mutableStateOf(false) }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = bottomSheetState,
@@ -252,15 +250,6 @@ fun QuestDetailBottomSheet(
         }
     }
 
-    when(expandedDropDown) {
-        true -> {
-            QuestStartedScreen(
-                questID = quest.id,
-                onNavigateBack = onDismiss
-            )
-        }
-        false -> {}
-    }
 }
 
 @Composable
