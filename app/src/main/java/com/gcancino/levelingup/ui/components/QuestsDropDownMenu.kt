@@ -9,6 +9,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +86,9 @@ fun QuestDropDownMenu(
             quest = questToShow,
             onDismiss = { showQuestDetailsDialog = null },
             onAccept = {
-                navController.navigate("questStarted/${questToShow.id}")
+                viewModel.updateQuestStatus(questToShow.id)
+                navController.currentBackStackEntry?.savedStateHandle?.set("quest", questToShow)
+                navController.navigate("questStarted")
             }
         )
     }

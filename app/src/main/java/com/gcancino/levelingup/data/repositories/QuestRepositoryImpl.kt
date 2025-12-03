@@ -155,7 +155,7 @@ class QuestRepositoryImpl @Inject constructor(
 
     override suspend fun updateQuestStatus(questID: String) : Resource<Unit> {
         return try {
-            questDao.updateQuestStatusToCompleted(questID)
+            questDao.updateQuestStatusToInProgress(questID)
             Resource.Success(Unit)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Unknown error occurred")

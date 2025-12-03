@@ -130,18 +130,8 @@ fun Navigation() {
 
                     )
                 }
-                composable(
-                    route = "questStarted/{questID}",
-                    arguments = listOf(
-                        navArgument("questID") {
-                            type = NavType.StringType
-                        }
-                    )
-                ) { backStackEntry ->
-                    val questID = backStackEntry.arguments?.getString("questID")
-
+                composable("questStarted") {
                     QuestStartedScreen(
-                        questID = questID ?: "",
                         viewModel = hiltViewModel(),
                         onNavigateBack = { navController.popBackStack() }
                     )
