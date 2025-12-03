@@ -63,4 +63,8 @@ class QuestMenuViewModel @Inject constructor(
 
         }
     }
+
+    fun resetUpdateStatus() {
+        _updateQuestStatus.value = null
+    }
 }

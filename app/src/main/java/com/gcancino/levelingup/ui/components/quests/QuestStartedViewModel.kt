@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
@@ -29,7 +30,8 @@ import org.vosk.Model
 class QuestStartedViewModel @Inject constructor(
     private val questRepository: QuestRepository,
     private val application: Application,
-    private val voiceParserFactory: VoiceParserFactory
+    private val voiceParserFactory: VoiceParserFactory,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuestStartedUiState())
@@ -50,6 +52,10 @@ class QuestStartedViewModel @Inject constructor(
     private val modelInitialized = MutableStateFlow(false)
 
     init {
+        savedStateHandle.get<Quests>("quest")?.let { quest ->
+            initializeQuest(quest)
+        }
+
         initializeTextToSpeech()
 
         networkCallback = object : ConnectivityManager.NetworkCallback() {

@@ -59,13 +59,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.gcancino.levelingup.domain.models.Quests
 import com.gcancino.levelingup.domain.models.VoiceToTextParserState
 import java.util.Locale
 
 @ExperimentalMaterial3Api
 @Composable
 fun QuestStartedScreen(
-    questID: String,
     viewModel: QuestStartedViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onQuestTitleLoaded: (String) -> Unit = {},
@@ -81,11 +81,6 @@ fun QuestStartedScreen(
             viewModel.onPermissionResult(isGranted)
         }
     )
-
-    // Load quest when questID changes
-    LaunchedEffect(questID) {
-        viewModel.loadQuest(questID)
-    }
 
     // Update title when quest is loaded
     LaunchedEffect(uiState.quest) {

@@ -1,8 +1,11 @@
 package com.gcancino.levelingup.domain.models
 
+import android.os.Parcelable
 import com.gcancino.levelingup.domain.models.player.Improvement
+import kotlinx.parcelize.Parcelize
 import java.util.Date
 
+@Parcelize
 data class Quests(
     val id: String = "",
     val types: List<Improvement>? = null,
@@ -15,7 +18,7 @@ data class Quests(
     val rewards: QuestRewards? = null,
     val details: QuestDetails? = null,
     val streak: QuestStreak? = null
-)
+) : Parcelable
 
 enum class QuestStatus {
     NOT_STARTED,
@@ -29,12 +32,14 @@ enum class QuestType {
     RECOVERY
 }
 
+@Parcelize
 data class QuestRewards(
     val xp: Int? = null,
     val coins: Int? = null,
     val attributes: QuestAttributes? = null
-)
+) : Parcelable
 
+@Parcelize
 data class QuestAttributes(
     val strength: Int? = null,
     val intelligence: Int? = null,
@@ -42,8 +47,9 @@ data class QuestAttributes(
     val mobility: Int? = null,
     val health: Int? = null,
     val finesse: Int? = null,
-)
+) : Parcelable
 
+@Parcelize
 data class QuestDetails(
     val type: QuestType? = null,
     val progressionIncrement: Float? = null,
@@ -65,7 +71,7 @@ data class QuestDetails(
     val targetSleep: Int? = null,
     val currentColdBaths: Int? = null,
     val targetColdBaths: Int? = null
-) {
+) : Parcelable {
     // Helper methods to check quest type
     fun isEnduranceQuest() = type == QuestType.ENDURANCE
     fun isStrengthQuest() = type == QuestType.STRENGTH
@@ -86,22 +92,25 @@ data class QuestDetails(
 }
 
 // Optional: Helper data classes for type safety when working with specific quest types
+@Parcelize
 data class EnduranceDetails(
     val progressionIncrement: Float?,
     val targetTime: Int?,
     val currentTime: Int?,
     val targetDistance: Int?,
     val currentDistance: Int?
-)
+) : Parcelable
 
+@Parcelize
 data class StrengthDetails(
     val progressionIncrement: Float?,
     val targetTime: Int?,
     val currentTime: Int?,
     val targetReps: Int?,
     val currentReps: Int?
-)
+) : Parcelable
 
+@Parcelize
 data class RecoveryDetails(
     val progressionIncrement: Float?,
     val targetWater: Int?,
@@ -110,13 +119,14 @@ data class RecoveryDetails(
     val targetSleep: Int?,
     val currentColdBaths: Int?,
     val targetColdBaths: Int?
-)
+) : Parcelable
 
+@Parcelize
 data class QuestStreak(
     val currentStreak: Int? = 0,
     val longestStreak: Int? = 0,
     val lastStreakDate: Date? = null
-)
+) : Parcelable
 
 /*val dailyQuests: List<Quests> = listOf(
     Quests(
