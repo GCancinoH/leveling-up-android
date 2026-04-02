@@ -23,7 +23,9 @@ val purpleBlueGradient = Brush.horizontalGradient(
 val Blue20 = Color(0xFF4A69BD)
 val Blue40 = Color(0xFF1E88E5)
 
-val BackgroundColor = Color(0xFF030303)
+//val BackgroundColor = Color(0xFF030303)
+val BackgroundColor = Color(0xFF050505)
+
 
 val LevelingUpDarkColorScheme = darkColorScheme(
     primary = Color(0xFF4CAF50), // A shade of green that might represent the positive income/good financial health

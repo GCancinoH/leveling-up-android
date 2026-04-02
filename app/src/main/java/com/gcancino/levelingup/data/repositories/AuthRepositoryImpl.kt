@@ -13,7 +13,7 @@ import com.gcancino.levelingup.data.local.database.entities.PlayerEntity
 import com.gcancino.levelingup.data.mappers.isFresh
 import com.gcancino.levelingup.data.mappers.toDomain
 import com.gcancino.levelingup.data.mappers.toEntity
-import com.gcancino.levelingup.domain.models.BodyComposition
+import com.gcancino.levelingup.domain.models.bodyComposition.BodyComposition
 import com.gcancino.levelingup.domain.models.Player
 import com.gcancino.levelingup.domain.models.player.Attributes
 import com.gcancino.levelingup.domain.models.player.CategoryType
@@ -23,13 +23,10 @@ import com.gcancino.levelingup.domain.models.player.PlayerData
 import com.gcancino.levelingup.domain.models.player.Progress
 import com.gcancino.levelingup.domain.models.player.Streak
 import com.gcancino.levelingup.domain.repositories.AuthRepository
-import com.gcancino.levelingup.presentation.auth.signUp.steps.BodyCompositionStep
-import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.toObject
@@ -58,7 +55,21 @@ class AuthRepositoryImpl @Inject constructor(
         email: String,
         password: String
     ): Resource<Player> {
-        TODO()
+        return try {
+            val result = auth.signInWithEmailAndPassword(email, password).await()
+            val user = result.user ?: return Resource.Error("User not found")
+
+            val player = fetchAndCacheFromFirestore(user.uid)
+            if (player != null) {
+                Resource.Success(player)
+            } else {
+                Resource.Error("Failed to fetch player data")
+            }
+        } catch (e: FirebaseAuthException) {
+            Resource.Error(getAuthErrorMessage(e.errorCode))
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Authentication failed")
+        }
     }
 
     override fun signUpWithEmailAndPassword(
@@ -188,11 +199,11 @@ class AuthRepositoryImpl @Inject constructor(
             }
 
             val bodyCompositionData = BodyComposition(
-                uid = user.uid,
+                uID = user.uid,
                 weight = weightValue,
                 bmi = bmiValue,
                 date = Date(),
-                isInitial = true
+                initialData = true
             )
 
             coroutineScope {
@@ -209,7 +220,7 @@ class AuthRepositoryImpl @Inject constructor(
                     localDB.playerDao().updateLocalHeight(user.uid, heightValue)
                 }
                 val localBodyCompositionDeferred = async(Dispatchers.IO) {
-                    localDB.bodyCompositionDao().insertBodyComposition(bodyCompositionData.toEntity())
+                    /*localDB.bodyCompositionDao().insertBodyComposition(bodyCompositionData.toEntity())*/
                 }
 
                 val firebaseResult = firebaseDeferred.await()
@@ -227,9 +238,9 @@ class AuthRepositoryImpl @Inject constructor(
                     localResult <= 0 -> {
                         emit(Resource.Error("Failed to save player's physical data"))
                     }
-                    localBodyCompositionResult <= 0 -> {
+                    /*localBodyCompositionResult <= 0 -> {
                         emit(Resource.Error("Failed to save player's physical data"))
-                    }
+                    }*/
                 }
                 emit(Resource.Success(Unit))
             }
@@ -283,11 +294,23 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun forgotPassword(email: String): Resource<Boolean> {
-        TODO("Not yet implemented")
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            Resource.Success(true)
+        } catch (e: FirebaseAuthException) {
+            Resource.Error(getAuthErrorMessage(e.errorCode))
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to send reset email")
+        }
     }
 
     override suspend fun signOut(): Resource<Boolean> {
-        TODO("Not yet implemented")
+        return try {
+            auth.signOut()
+            Resource.Success(true)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Failed to sign out")
+        }
     }
 
     override fun getCurrentPlayer(): Flow<Resource<Player?>> = flow {
@@ -334,6 +357,73 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getPlayerData(): Flow<Resource<PlayerData>> = flow {
+        val user = auth.currentUser ?: run {
+            emit(Resource.Error("User not logged in"))
+            return@flow
+        }
+        val uid = user.uid
+        emit(Resource.Loading())
+
+        try {
+            // 1. Fetch everything from local DB
+            val localPlayerData = withContext(Dispatchers.IO) {
+                val player = localDB.playerDao().getPlayer(uid)?.toDomain()
+                val attributes = localDB.playerAttributesDao().getPlayerAttributes(uid)?.toDomain()
+                val progress = localDB.playerProgressDao().getPlayerProgress(uid)?.toDomain()
+                val streak = localDB.playerStreakDao().getPlayerStreak(uid)?.toDomain()
+                
+                PlayerData(player, attributes, progress, streak)
+            }
+
+            // 2. If we have local player data, emit it and STOP (Network First/Sync handled by Workers)
+            if (localPlayerData.player != null) {
+                emit(Resource.Success(localPlayerData))
+                return@flow
+            }
+
+            // 3. Only sync with Firestore if local data is missing (e.g., new device)
+            val remotePlayerData = fetchFullPlayerDataFromFirestore(uid)
+            if (remotePlayerData?.player != null) {
+                // Cache it
+                withContext(Dispatchers.IO) {
+                    localDB.withTransaction {
+                        remotePlayerData.player.let { localDB.playerDao().insertPLayer(it.toEntity()) }
+                        remotePlayerData.attributes?.let { localDB.playerAttributesDao().insertPlayerAttributes(it.toEntity()) }
+                        remotePlayerData.progress?.let { localDB.playerProgressDao().insertPlayerProgress(it.toEntity()) }
+                        remotePlayerData.streak?.let { localDB.playerStreakDao().insertPlayerStreak(it.toEntity()) }
+                    }
+                }
+                emit(Resource.Success(remotePlayerData))
+            } else {
+                emit(Resource.Error("Failed to load player data from local or remote"))
+            }
+
+        } catch (e: Exception) {
+            emit(Resource.Error("Error fetching player data: ${e.message}"))
+        }
+    }
+
+    private suspend fun fetchFullPlayerDataFromFirestore(uid: String): PlayerData? {
+        return try {
+            coroutineScope {
+                // Return null if the main player document doesn't exist to avoid "nullified" objects
+                val playerDoc = db.collection("players").document(uid).get().await()
+                if (!playerDoc.exists()) return@coroutineScope null
+                
+                val player = playerDoc.toObject<Player>() ?: return@coroutineScope null
+
+                val attrDef = async { db.collection("player_attributes").document(uid).get().await().toObject<Attributes>() }
+                val progDef = async { db.collection("player_progress").document(uid).get().await().toObject<Progress>() }
+                val streakDef = async { db.collection("player_streaks").document(uid).get().await().toObject<Streak>() }
+                
+                PlayerData(player, attrDef.await(), progDef.await(), streakDef.await())
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override fun getAuthState(): Flow<Resource<Player?>> = callbackFlow {
         val listener = FirebaseAuth.AuthStateListener { auth ->
             val cloudPlayer = auth.currentUser
@@ -361,7 +451,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     private fun createPlayerData(user: FirebaseUser) = PlayerData(
-        player = Player(uid = user.uid, email = user.email),
+        player = Player(uid = user.uid, email = user.email, displayName = user.displayName),
         attributes = Attributes(
             uid = user.uid,
             strength = 0, endurance = 0, intelligence = 0,
@@ -523,6 +613,9 @@ class AuthRepositoryImpl @Inject constructor(
             "ERROR_WEAK_PASSWORD" -> "Password must be at least 6 characters"
             "ERROR_MISSING_EMAIL" -> "Email is required"
             "ERROR_MISSING_PASSWORD" -> "Password is required"
+            "ERROR_USER_NOT_FOUND" -> "No account found with this email"
+            "ERROR_WRONG_PASSWORD" -> "Incorrect password"
+            "ERROR_USER_DISABLED" -> "This account has been disabled"
             "ERROR_OPERATION_NOT_ALLOWED" -> "Sign-up not enabled"
             "ERROR_NETWORK_REQUEST_FAILED" -> "Network error occurred"
             "ERROR_TOO_MANY_REQUESTS" -> "Too many requests, try again later"

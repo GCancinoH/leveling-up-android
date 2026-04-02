@@ -20,7 +20,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "leveling_up_db"
-        ).build()
+        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
+            .fallbackToDestructiveMigration(false) // Added to handle schema changes during development
+        .build()
     }
 
     @Provides
@@ -45,5 +47,29 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideBodyMeasurementDao(db: AppDatabase) = db.bodyMeasurementsDao()
+
+    @Provides
+    @Singleton
     fun provideQuestDao(db: AppDatabase) = db.questDao()
+
+    @Provides
+    @Singleton
+    fun provideExerciseDao(db: AppDatabase) = db.exerciseDao()
+
+    @Provides
+    @Singleton
+    fun provideDailyTaskDao(db: AppDatabase) = db.dailyTaskDao()
+
+    @Provides
+    @Singleton
+    fun provideMorningEntryDao(db: AppDatabase) = db.morningEntryDao()
+
+    @Provides
+    @Singleton
+    fun provideEveningEntryDao(db: AppDatabase) = db.eveningEntryDao()
+
+    @Provides
+    @Singleton
+    fun providePenaltyEventDao(db: AppDatabase) = db.penaltyEventDao()
 }

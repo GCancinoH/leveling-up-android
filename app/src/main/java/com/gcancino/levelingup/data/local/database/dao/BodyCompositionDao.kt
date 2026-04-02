@@ -1,20 +1,35 @@
 package com.gcancino.levelingup.data.local.database.dao
 
-import androidx.compose.runtime.ReusableComposition
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
-import androidx.room.Update
-import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.local.database.entities.BodyCompositionEntity
-import com.gcancino.levelingup.data.mappers.toEntity
-import com.gcancino.levelingup.domain.models.BodyComposition
+import com.gcancino.levelingup.data.local.database.entities.bodyData.BodyCompositionEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+interface BodyCompositionDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entity: BodyCompositionEntity)
+
+    @Query("SELECT * FROM body_composition WHERE uID = :uID ORDER BY date DESC")
+    fun getAll(uID: String): Flow<List<BodyCompositionEntity>>
+
+    @Query("SELECT * FROM body_composition WHERE uID = :uID AND initialData = 1 LIMIT 1")
+    suspend fun getInitialData(uID: String): BodyCompositionEntity?
+
+    @Query("SELECT * FROM body_composition WHERE isSynced = 0")
+    suspend fun getUnsynced(): List<BodyCompositionEntity>
+
+    @Query("UPDATE body_composition SET isSynced = 1 WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
+
+    @Query("SELECT COUNT(*) FROM body_composition WHERE uID = :uID AND initialData = 1")
+    suspend fun countInitialData(uID: String): Int
+}
+
+/*@Dao
 interface BodyCompositionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -85,4 +100,4 @@ interface BodyCompositionDao {
     suspend fun updateInitialPhotos(uid: String, photos: List<String>): Int
 
 
-}
+}*/

@@ -2,6 +2,7 @@ package com.gcancino.levelingup.core.di
 
 import android.content.Context
 import android.util.Log
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

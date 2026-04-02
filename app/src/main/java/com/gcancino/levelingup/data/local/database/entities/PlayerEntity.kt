@@ -15,7 +15,7 @@ data class PlayerEntity(
     val photoURL: String? = null,
     val birthDate: Date? = null,
     val age: Int? = null,
-    val height: Int? = null,
+    val height: Double? = null,
     val gender: Genders? = null,
     val improvements: List<Improvement>? = emptyList(),
     @ColumnInfo(name = "last_sync")

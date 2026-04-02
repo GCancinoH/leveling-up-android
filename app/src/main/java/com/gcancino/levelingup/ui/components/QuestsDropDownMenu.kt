@@ -33,7 +33,7 @@ fun QuestDropDownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     viewModel: QuestMenuViewModel = hiltViewModel(),
-    navController: NavHostController
+    onNavigateToQuest: () -> Unit
 ) {
     val quests by viewModel.quests.collectAsState()
     var showQuestDetailsDialog by remember { mutableStateOf<Quests?>(null) }
@@ -77,18 +77,14 @@ fun QuestDropDownMenu(
 
     // -- Dialog for Quest Details --
     showQuestDetailsDialog?.let { questToShow ->
-        /*QuestDetailDialog(
-            quest = questToShow,
-            onDismissAction = { showQuestDetailsDialog = null }
-        )*/
         QuestDetailBottomSheet(
             modifier = Modifier,
             quest = questToShow,
             onDismiss = { showQuestDetailsDialog = null },
             onAccept = {
                 viewModel.updateQuestStatus(questToShow.id)
-                navController.currentBackStackEntry?.savedStateHandle?.set("quest", questToShow)
-                navController.navigate("questStarted")
+                showQuestDetailsDialog = null
+                onNavigateToQuest()
             }
         )
     }

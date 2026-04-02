@@ -17,5 +17,6 @@ interface AuthRepository {
     suspend fun forgotPassword(email: String): Resource<Boolean>
     suspend fun signOut(): Resource<Boolean>
     fun getCurrentPlayer(): Flow<Resource<Player?>>
+    fun getPlayerData(): Flow<Resource<PlayerData>>
     fun getAuthState(): Flow<Resource<Player?>>
 }

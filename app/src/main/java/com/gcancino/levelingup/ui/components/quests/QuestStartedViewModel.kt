@@ -60,13 +60,17 @@ class QuestStartedViewModel @Inject constructor(
 
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
-                _uiState.update { it.copy(isOnline = true) }
-                switchVoiceParser()
+                viewModelScope.launch {
+                    _uiState.update { it.copy(isOnline = true) }
+                    switchVoiceParser()
+                }
             }
 
             override fun onLost(network: android.net.Network) {
-                _uiState.update { it.copy(isOnline = false) }
-                switchVoiceParser()
+                viewModelScope.launch {
+                    _uiState.update { it.copy(isOnline = false) }
+                    switchVoiceParser()
+                }
             }
         }
 

@@ -5,7 +5,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ForegroundServicesPolicy" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <queries>
+        <package android:name="com.google.android.gms" />
+    </queries>
 
     <application
         android:name=".LevelingUpApp"
@@ -19,10 +26,17 @@
         android:theme="@style/Theme.LevelingUp"
         tools:targetApi="31"
         tools:replace="android:dataExtractionRules">
+
+        <service
+            android:name=".presentation.player.session.TimerService"
+            android:foregroundServiceType="shortService"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.LevelingUp">
+            android:theme="@style/Theme.LevelingUp"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -1,20 +1,13 @@
 package com.gcancino.levelingup.data.local.database.converters
 
 import androidx.room.TypeConverter
+import com.gcancino.levelingup.domain.models.player.Genders
 import com.gcancino.levelingup.domain.models.player.Improvement
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import java.util.Date
 
 class PlayerConverters {
     private val gson = Gson()
-
-    // Date Converters
-    @TypeConverter
-    fun fromDate(date: Date?): Long? = date?.time
-
-    @TypeConverter
-    fun toDate(timestamp: Long?): Date? = timestamp?.let { Date(it) }
 
     // Improvements Converter
     @TypeConverter
@@ -39,4 +32,15 @@ class PlayerConverters {
         }
     }
 
+    @TypeConverter
+    fun fromGender(gender: Genders?): String? = gender?.name
+
+    @TypeConverter
+    fun toGender(gender: String?): Genders? = gender?.let {
+        try {
+            Genders.valueOf(it)
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

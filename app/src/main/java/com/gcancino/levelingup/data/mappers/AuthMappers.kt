@@ -1,11 +1,10 @@
 package com.gcancino.levelingup.data.mappers
 
-import com.gcancino.levelingup.data.local.database.entities.BodyCompositionEntity
 import com.gcancino.levelingup.data.local.database.entities.PlayerAttributesEntity
 import com.gcancino.levelingup.data.local.database.entities.PlayerEntity
 import com.gcancino.levelingup.data.local.database.entities.PlayerProgressEntity
 import com.gcancino.levelingup.data.local.database.entities.PlayerStreakEntity
-import com.gcancino.levelingup.domain.models.BodyComposition
+import com.gcancino.levelingup.domain.models.bodyComposition.BodyComposition
 import com.gcancino.levelingup.domain.models.Player
 import com.gcancino.levelingup.domain.models.player.Attributes
 import com.gcancino.levelingup.domain.models.player.CategoryType
@@ -52,6 +51,7 @@ fun PlayerProgressEntity.toDomain(): Progress {
         coins = this.coins,
         exp = this.exp,
         level = this.level,
+        availablePoints = this.availablePoints,
         currentCategory = CategoryType.fromString(this.currentCategory)
     )
 }
@@ -62,6 +62,7 @@ fun Progress.toEntity(): PlayerProgressEntity {
         coins = this.coins,
         exp = this.exp,
         level = this.level,
+        availablePoints = this.availablePoints,
         currentCategory = this.currentCategory.name
     )
 }
@@ -90,11 +91,13 @@ fun Attributes.toEntity() : PlayerAttributesEntity {
     )
 }
 
-fun PlayerEntity.isFresh(maxAgeMinutes: Long = 480): Boolean {
-    val currentTime = System.currentTimeMillis()
-    val lastSyncTime = lastSync.time
-    val ageInMinutes = (currentTime - lastSyncTime) / (1000 * 60)
-    return ageInMinutes <= maxAgeMinutes
+fun PlayerStreakEntity.toDomain(): Streak {
+    return Streak(
+        uid = this.uid,
+        currentStreak = this.currentStreak,
+        longestStreak = this.longestStreak,
+        lastStreakUpdate = this.lastStreakUpdate?.let { Date(it) } ?: Date()
+    )
 }
 
 fun Streak.toEntity(): PlayerStreakEntity {
@@ -107,30 +110,9 @@ fun Streak.toEntity(): PlayerStreakEntity {
 
 }
 
-fun BodyCompositionEntity.toDomain() : BodyComposition {
-    return BodyComposition(
-        uid = this.uid,
-        weight = this.weight,
-        bmi = this.bmi,
-        bodyFat = this.bodyFat,
-        muscleMass = this.muscleMass,
-        bodyAge = this.bodyAge,
-        visceralFat = this.visceralFat,
-        date = this.date,
-        isInitial = this.isInitial
-    )
-}
-
-fun BodyComposition.toEntity() : BodyCompositionEntity {
-    return BodyCompositionEntity(
-        uid = this.uid,
-        weight = this.weight,
-        bmi = this.bmi,
-        bodyFat = this.bodyFat,
-        muscleMass = this.muscleMass,
-        bodyAge = this.bodyAge,
-        visceralFat = this.visceralFat,
-        date = this.date,
-        isInitial = this.isInitial ?: false
-    )
+fun PlayerEntity.isFresh(maxAgeMinutes: Long = 480): Boolean {
+    val currentTime = System.currentTimeMillis()
+    val lastSyncTime = lastSync.time
+    val ageInMinutes = (currentTime - lastSyncTime) / (1000 * 60)
+    return ageInMinutes <= maxAgeMinutes
 }

@@ -16,52 +16,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.domain.models.Player
 
 @Composable
 fun InitScreen(
     viewModel: InitViewModel,
     onSignedIn: () -> Unit,
-    onSignInError: () -> Unit
+    onSignInError: () -> Unit,
+    onNeedsOnboarding: () -> Unit
 ) {
     val userState by viewModel.userState.collectAsState()
 
-    if (userState is Resource.Loading)
-        InitialLoadingContent(userState)
+    if (userState is InitViewModel.UserState.Loading)
+        InitialLoadingContent()
 
     LaunchedEffect(userState) {
         when (val state = userState) {
-            is Resource.Success -> onSignedIn()
-            is Resource.Error -> onSignInError()
+            is InitViewModel.UserState.Ready -> {
+                if (state.needsOnboarding) onNeedsOnboarding()
+                else onSignedIn()
+            }
+            is InitViewModel.UserState.Error -> onSignInError()
             else -> Unit
         }
     }
-
 }
 
 @Composable
-fun InitialLoadingContent(
-    userState: Resource<Player>
-) {
+fun InitialLoadingContent() {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        /*Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo",
-            modifier = Modifier.size(200.dp)
-        )*/
         Spacer(modifier = Modifier.height(16.dp))
         CircularProgressIndicator(
             modifier = Modifier.size(50.dp),
             color = Color.White
         )
         Spacer(modifier = Modifier.height(16.dp))
-        if(userState is Resource.Loading) {
-            Text(text = "Checking user status...")
-        }
+        Text(text = "Checking user status...")
     }
 }

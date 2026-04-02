@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,18 @@ fun SignInScreen(
     onGoToSignUp: () -> Unit,
 ) {
     val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is Resource.Success -> {
+                onSignedIn()
+            }
+            is Resource.Error -> {
+                onSignInError()
+            }
+            else -> Unit
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()

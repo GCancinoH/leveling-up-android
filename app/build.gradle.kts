@@ -1,11 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    //alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -99,6 +100,8 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.runtime)
     ksp(libs.room.compiler)
     //kapt(libs.room.compiler)
     annotationProcessor(libs.room.processor)
@@ -135,8 +138,10 @@ dependencies {
     implementation(platform(libs.reownBom))
     implementation(libs.reown.core)
     implementation(libs.reown.appKit)
+    implementation(libs.kitizonwoseCal)
+    implementation(libs.vico.compose)
 
-
+    // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

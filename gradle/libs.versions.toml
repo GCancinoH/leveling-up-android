@@ -1,43 +1,47 @@
 [versions]
-agp = "8.13.1"
-kotlin = "2.2.21"
-coreKtx = "1.17.0"
+agp = "9.1.0"
+kotlin = "2.3.20"
+coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 lifecycleCompose = "2.10.0"
 lifecycleExt = "2.2.0"
-activityCompose = "1.12.0"
-navigationCompose = "2.9.6"
-composeBom = "2025.11.01"
-firebaseBom = "34.6.0"
+activityCompose = "1.13.0"
+navigationCompose = "2.9.7"
+composeBom = "2026.03.01"
+firebaseBom = "34.11.0"
 coroutines = "1.10.2"
 splashscreen = "1.2.0"
-dataStore = "1.2.0"
+dataStore = "1.2.1"
 room = "2.8.4"
 googleServices = "4.4.4"
 googleCodeScanner = "16.1.0"
 googleAccompanist = "0.37.3"
 gson = "2.13.2"
-googleAuth = "21.4.0"
+googleAuth = "21.5.1"
 retrofit = "3.0.0"
 materialAlpha = "1.4.0"
-camera = "1.5.1"
-coil = "3.3.0"
+camera = "1.6.0"
+coil = "3.4.0"
 glance = "1.1.1"
-worker = "2.11.0"
-kspVersion = "2.2.20-2.0.3"
-kotlinSerialization = "2.2.21"
-kotlinSerializationJson = "1.9.0"
-kotlinReflect = "2.1.20"
-oneSignal = "[5.0.0,5.99.99)"
-sqlCipher = "4.11.0"
-vosk = "0.3.70"
-reown = "1.5.1"
-hilt = "2.57.2"
+worker = "2.11.2"
+kspVersion = "2.3.2"
+kotlinSerialization = "2.3.20"
+kotlinSerializationJson = "1.10.0"
+kotlinReflect = "2.3.0"
+oneSignal = "5.7.6"
+sqlCipher = "4.14.0"
+vosk = "0.3.75"
+reown = "1.6.10"
+hilt = "2.59.2"
 hiltCompose = "1.3.0"
 hiltWork = "1.3.0"
+kizitonwoseCal = "2.10.0"
+vico = "3.0.3"
+foundation = "1.10.6"
+runtime = "1.10.6"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -119,11 +123,15 @@ kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-j
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref="kotlinReflect" }
 oneSignal = { module = "com.onesignal:OneSignal", version.ref = "oneSignal" }
 sqlCipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlCipher" }
+vico-compose = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
 #noinspection Aligned16KB
 vosk = { group = 'com.alphacephei', name = 'vosk-android', version.ref = 'vosk' }
 reownBom = { module = "com.reown:android-bom", version.ref = "reown" }
 reown-core = { module = "com.reown:android-core" }
 reown-appKit = { module = "com.reown:appkit" }
+kitizonwoseCal = { module = "com.kizitonwose.calendar:compose", version.ref = "kizitonwoseCal" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

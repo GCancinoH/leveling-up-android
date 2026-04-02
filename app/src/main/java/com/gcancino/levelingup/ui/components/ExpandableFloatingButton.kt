@@ -44,7 +44,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.gcancino.levelingup.presentation.player.dashboard.components.BodyCompositionBottomSheet
-import com.gcancino.levelingup.presentation.player.dashboard.viewModels.BodyCompositionBottomSheetViewModel
+import com.gcancino.levelingup.presentation.player.dashboard.viewModels.BodyCompositionViewModel
 import com.gcancino.levelingup.ui.theme.PurpleGrey40
 import kotlinx.coroutines.launch
 
@@ -52,7 +52,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ExpandableFloatingButton(
     snackbarState: SnackbarHostState,
-    bodyCompositionViewModel: BodyCompositionBottomSheetViewModel,
+    bodyCompositionViewModel: BodyCompositionViewModel,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(false) }
