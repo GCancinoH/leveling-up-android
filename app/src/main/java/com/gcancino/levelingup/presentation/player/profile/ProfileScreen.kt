@@ -8,6 +8,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.*
@@ -36,6 +37,7 @@ import timber.log.Timber
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
+    onNavigateToIdentityWall: () -> Unit,
     onNavigateBack: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -54,6 +56,9 @@ fun ProfileScreen(
                 actions = {
                     IconButton(onClick = {/* TODO() */}) {
                         Icon(Icons.Outlined.Sync, contentDescription = "Sync")
+                    }
+                    IconButton(onClick = { onNavigateToIdentityWall() }) {
+                        Icon(Icons.Default.Psychology, contentDescription = "Identity Wall")
                     }
                     IconButton(onClick = { viewModel.signOut(onSignOut) }) {
                         Icon(painter = painterResource(R.drawable.logout), contentDescription = "Sign out")

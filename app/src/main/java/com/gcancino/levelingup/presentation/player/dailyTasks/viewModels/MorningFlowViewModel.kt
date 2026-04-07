@@ -1,38 +1,30 @@
 package com.gcancino.levelingup.presentation.player.dailyTasks.viewModels
 
-import android.app.Application
-import android.content.Context
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.DailyTasksRepositoryImpl
+import com.gcancino.levelingup.data.local.datastore.DataStoreManager
 import com.gcancino.levelingup.domain.models.Question
 import com.gcancino.levelingup.domain.models.QuestionBank
 import com.gcancino.levelingup.domain.models.dailyTasks.MorningEntry
+import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
 import com.gcancino.levelingup.domain.models.dailyTasks.ReflectionAnswer
-import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
+import com.gcancino.levelingup.domain.use_cases.dailyTasks.SaveMorningEntryUseCase
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import timber.log.Timber
-import java.util.Calendar
-import java.util.Date
-import java.util.UUID
-import javax.inject.Inject
-import androidx.core.content.edit
-import androidx.lifecycle.ViewModel
-import com.gcancino.levelingup.data.local.datastore.DataStoreManager
-import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
-import com.gcancino.levelingup.domain.use_cases.dailyTasks.SaveMorningEntryUseCase
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlin.text.trim
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.util.Date
+import java.util.UUID
+import javax.inject.Inject
 
 @HiltViewModel
 class MorningFlowViewModel @Inject constructor(
@@ -110,7 +102,7 @@ class MorningFlowViewModel @Inject constructor(
         .map { it == totalSteps - 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    fun save() {
+    fun save(questionTexts: Map<String, String>) {
         val uID = auth.currentUser?.uid ?: run {
             _saveState.value = Resource.Error("Not authenticated"); return
         }
@@ -125,7 +117,7 @@ class MorningFlowViewModel @Inject constructor(
                 date = Date(),
                 answers = questions.mapNotNull { q ->
                     _answers.value[q.id]?.let { answer ->
-                        ReflectionAnswer(q.id, q.text, answer)
+                        ReflectionAnswer(q.id, questionTexts[q.id] ?: "", answer)
                     }
                 },
                 isSynced = false

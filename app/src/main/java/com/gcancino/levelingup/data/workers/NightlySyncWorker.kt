@@ -6,56 +6,72 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.repositories.DailyTasksRepositoryImpl
+import com.gcancino.levelingup.domain.logic.DailyResetManager
 import com.gcancino.levelingup.domain.repositories.BodyDataRepository
+import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
+import com.gcancino.levelingup.domain.repositories.IdentityRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import timber.log.Timber
+
+// ─── NightlySyncWorker ────────────────────────────────────────────────────────
+// Role: SYNC only — push unsynced Room data to Firestore.
+// Also runs DailyResetManager as safety net (in case user never opened app).
+// This guarantees data is never lost even if the user doesn't open the app.
 
 @HiltWorker
 class NightlySyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
+    private val auth: FirebaseAuth,
     private val bodyDataRepository: BodyDataRepository,
-    private val dailyTasksRepositoryImpl: DailyTasksRepositoryImpl
+    private val dailyTasksRepository: DailyTasksRepository,
+    private val identityRepository: IdentityRepository,
+    private val dailyResetManager: DailyResetManager  // safety net
 ) : CoroutineWorker(context, params) {
 
     private val TAG = "NightlySyncWorker"
 
     override suspend fun doWork(): Result {
-        Timber.tag(TAG).d("NightlySyncWorker started!")
+        Timber.tag(TAG).d("NightlySyncWorker started")
 
-        return coroutineScope {
-            val bodySync = async { bodyDataRepository.syncUnsynced() }
-            val dailyTasksSync = async { dailyTasksRepositoryImpl.syncUnsynced() }
-
-            val bodyResult = bodySync.await()
-            val dailyTasksResult = dailyTasksSync.await()
-
-            if (bodyResult is Resource.Error || dailyTasksResult is Resource.Error) {
-                Timber.tag(TAG).e(
-                    "Sync failed → body: ${(bodyResult as? Resource.Error)?.message} | " +
-                            "daily: ${(dailyTasksResult as? Resource.Error)?.message}"
-                )
-                Result.retry()
-            } else {
-                Timber.tag(TAG).i("✔ Nightly sync successful")
-                Result.success()
-            }
+        val uid = auth.currentUser?.uid ?: run {
+            Timber.tag(TAG).w("No authenticated user — skipping")
+            return Result.success()
         }
 
-        /*return when (val result = bodyDataRepository.syncUnsynced()) {
-            is Resource.Success -> {
-                Timber.tag(TAG).i("✔ Nightly sync successful")
-                Result.success()
-            }
-            is Resource.Error -> {
-                Timber.tag(TAG).e("✘ Nightly sync failed: ${result.message}. Retrying...")
-                Result.retry()
-            }
-            else -> Result.retry()
-        }*/
+        return try {
+            coroutineScope {
+                // 1. Apply any pending penalties (safety net — idempotent)
+                val resetJob = async {
+                    try { dailyResetManager.evaluateAndApply(uid) }
+                    catch (e: Exception) { Timber.tag(TAG).w("Reset failed: ${e.message}") }
+                }
 
+                // 2. Sync everything to Firestore in parallel
+                val bodySync     = async { bodyDataRepository.syncUnsynced() }
+                val dailySync    = async { dailyTasksRepository.syncUnsynced() }
+                val identitySync = async { identityRepository.syncUnsynced() }
+
+                resetJob.await()
+                val results: List<Resource<*>> = awaitAll(bodySync, dailySync, identitySync)
+
+                val error = results.filterIsInstance<Resource.Error<*>>().firstOrNull()
+                if (error != null) {
+                    Timber.tag(TAG).e("Sync failed: ${error.message}")
+                    Result.retry()
+                } else {
+                    Timber.tag(TAG).i("✔ Nightly sync complete")
+                    Result.success()
+                }
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "NightlySyncWorker failed")
+            Result.retry()
+        }
     }
 }

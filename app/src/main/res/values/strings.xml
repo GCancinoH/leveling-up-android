@@ -1,3 +1,95 @@
 <resources>
     <string name="app_name">Leveling Up</string>
+
+    /*
+     * Question Bank
+     */
+
+    // Morning Anchors and Rotations
+    <string name="qb_morningAnchor_1">Who am I choosing to be today?</string>
+    <string name="qb_morningAnchor_1_hint">Name it clearly — your brain acts on the identity it rehearses</string>
+    <string name="qb_morningAnchor_2">What will I not tolerate from myself today?</string>
+    <string name="qb_morningAnchor_2_hint">Proactive inhibition — name the behavior before it shows up.</string>
+    <string name="qb_morningAnchor_3">What is my single non-negotiable today?</string>
+    <string name="qb_morningAnchor_3_hint">One thing. If everything else burns, this gets done.</string>
+    <string name="qb_morningRotating_1">Which of your roles needs the most attention today — and what does that look like?</string>
+    <string name="qb_morningRotating_2">What fear or resistance might show up today, and how will the person you\'re becoming respond to it?</string>
+    <string name="qb_morningRotating_3">What would the person you\'re trying to be do in the first hour of today?</string>
+    <string name="qb_morningRotating_4">What story about yourself are you ready to stop confirming today?</string>
+    <string name="qb_morningRotating_5">If your future self could see today, what would they be proud of?</string>
+    <string name="qb_morningRotating_6">What standard do you tend to lower when no one is watching? Will you hold it today?</string>
+    <string name="qb_morningRotating_7">What does your body need from you today to perform as you expect?</string>
+    <string name="qb_morningRotating_8">What is the gap between who you say you are and how you behaved yesterday — and how do you close it today?</string>
+    <string name="qb_morningRotating_9">Which role in your identity has been getting the least from you lately?</string>
+    <string name="qb_morningRotating_10">What decision today, if made with full integrity, would change the trajectory of your week?</string>
+    <string name="qb_morningRotating_11">What limiting belief is trying to run the show today — and what is the truth that replaces it?</string>
+    <string name="qb_morningRotating_12">How will you show up for the people in your life today in a way consistent with who you\'re becoming?</string>
+    <string name="qb_morningRotating_13">What are you tolerating that someone with your identity would not?</string>
+    <string name="qb_morningRotating_14">What does discipline look like for you today — specifically, not generally?</string>
+    <string name="qb_morningRotating_15">What would you have to believe about yourself to make today excellent?</string>
+
+    // Evening Anchors and Rotations
+    <string name="qb_eveningAnchor_1">Did I act like the person I said I would be?</string>
+    <string name="qb_eveningAnchor_hint_1">Direct identity audit — be honest, not harsh</string>
+    <string name="qb_eveningAnchor_2">Where did I fall short — and what was the real reason?</string>
+    <string name="qb_eveningAnchor_hint_2">Reframe failure as data. The real reason is rarely what it seems.</string>
+    <string name="qb_eveningAnchor_3">What is the one correction I carry into tomorrow?</string>
+    <string name="qb_eveningAnchor_hint_3">Implementation intention — specific beats vague every time</string>
+    <string name="qb_eveningRotating_1">Which of your roles did you fully show up for today — and which one got a lesser version of you?</string>
+    <string name="qb_eveningRotating_2">What thought pattern ran on repeat today? Is it the pattern of the person you\'re becoming?</string>
+    <string name="qb_eveningRotating_3">Where did you make a decision based on who you used to be instead of who you\'re choosing to be?</string>
+    <string name="qb_eveningRotating_4">What did you say yes to today that someone with your identity would have said no to?</string>
+    <string name="qb_eveningRotating_5">What uncomfortable thing did you avoid today, and what does that avoidance cost you?</string>
+    <string name="qb_eveningRotating_6">Where did you operate from fear rather than from your declared identity?</string>
+    <string name="qb_eveningRotating_7">What did your body tell you today that your ego ignored?</string>
+    <string name="qb_eveningRotating_8">If you replayed today as an outside observer, what would you tell yourself to do differently?</string>
+    <string name="qb_eveningRotating_9">What habit either confirmed or undermined your identity today?</string>
+    <string name="qb_eveningRotating_10">Who did you influence today — and was that influence consistent with who you say you are?</string>
+    <string name="qb_eveningRotating_11">What were you pretending not to know about yourself today?</string>
+    <string name="qb_eveningRotating_12">What standard did you hold even when it was hard? What does that tell you about yourself?</string>
+    <string name="qb_eveningRotating_13">Where did you shrink when you could have stepped fully into your identity?</string>
+    <string name="qb_eveningRotating_14">What did you learn about yourself today that you want to remember in a year?</string>
+    <string name="qb_eveningRotating_15">What unfinished emotional or mental business is following you into tomorrow?</string>
+    <string name="qb_eveningRotating_16">How did your energy levels affect your ability to live your identity today?</string>
+    <string name="qb_eveningRotating_17">What conversation did you have — or avoid — that your identity required?</string>
+    <string name="qb_eveningRotating_18">What pattern are you finally ready to interrupt — and what replaces it?</string>
+    <string name="qb_eveningRotating_19">Where in your day did you feel most like the person you\'re trying to become?</string>
+    <string name="qb_eveningRotating_20">If today were a chapter in the story of who you became, what would its title be?</string>
+
+    <!-- Identity Setup -->
+    <string name="identity_title">Your Identity</string>
+    <string name="identity_subtitle">Define who you are, not what you do.</string>
+    <string name="identity_prefix">I am </string>
+    <string name="identity_placeholder">a disciplined athlete</string>
+    <string name="identity_daily_intro">This person, every day:</string>
+    <string name="identity_daily_standards_header">MY DAILY STANDARDS</string>
+    <string name="identity_train_label">Train</string>
+    <string name="identity_train_hint">Auto-validated with your sessions</string>
+    <string name="identity_add_standard">Add standard</string>
+    <string name="identity_info_note">💡 Training standards are auto-validated when you complete a session. The rest you mark yourself.</string>
+    <string name="identity_xp_per_day">+%d XP/day</string>
+
+    <!-- Identity Roles -->
+    <string name="identity_my_roles">MY ROLES</string>
+    <string name="identity_add_role">Add role</string>
+    <string name="identity_new_role">New Role</string>
+    <string name="identity_role_name_label">Role name</string>
+    <string name="identity_role_name_placeholder">Athlete, Trader, Reader…</string>
+    <string name="identity_no_roles_hint">Add roles to organize your standards</string>
+
+    <!-- Add Standard Sheet -->
+    <string name="identity_new_standard">New Standard</string>
+    <string name="identity_standard_question">What does this person do every day?</string>
+    <string name="identity_standard_type">Type</string>
+    <string name="identity_standard_role">Role</string>
+    <string name="identity_standard_xp_hint">+%d XP per day when fulfilled</string>
+    <string name="identity_add_standard_button">Add Standard</string>
+    <string name="identity_select_role">Select a role</string>
+
+    <!-- Navigation -->
+    <string name="nav_back">Back</string>
+    <string name="nav_skip">Skip</string>
+    <string name="nav_next">Next</string>
+    <string name="qb_mirrorMode">Mirror Mode: If the person you want to become  could see today\\\'s version of you — what would they say?</string>
+
 </resources>

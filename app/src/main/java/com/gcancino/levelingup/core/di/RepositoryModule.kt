@@ -1,6 +1,8 @@
 package com.gcancino.levelingup.core.di
 
 import com.gcancino.levelingup.data.repositories.*
+import com.gcancino.levelingup.domain.logic.RealTimeProvider
+import com.gcancino.levelingup.domain.logic.TimeProvider
 import com.gcancino.levelingup.domain.repositories.*
 import dagger.Binds
 import dagger.Module
@@ -40,4 +42,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDailyTasksRepository(impl: DailyTasksRepositoryImpl): DailyTasksRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindIdentityRepository(impl: IdentityRepositoryImpl): IdentityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTimeProvider(impl: RealTimeProvider): TimeProvider
 }

@@ -31,6 +31,13 @@ interface DailyTaskDao {
     @Query("UPDATE daily_tasks SET penaltyApplied = 1 WHERE id = :taskId")
     suspend fun markPenaltyApplied(taskId: String)
 
+    @Query("""
+    SELECT * FROM daily_tasks 
+    WHERE uID = :uID AND isCompleted = 0 AND penaltyApplied = 0
+    AND date >= :startOfDay AND date < :endOfDay
+    """)
+    suspend fun getIncompletePenaltyEligible(uID: String, startOfDay: Long, endOfDay: Long): List<DailyTaskEntity>
+
     @Query("SELECT * FROM daily_tasks WHERE isSynced = 0")
     suspend fun getUnsynced(): List<DailyTaskEntity>
 

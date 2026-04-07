@@ -10,10 +10,12 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.core.view.WindowCompat
+import androidx.work.WorkManager
 import com.gcancino.levelingup.core.Navigation
 import com.gcancino.levelingup.ui.theme.LevelingUpTheme
 import com.onesignal.OneSignal
 import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
 
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
@@ -31,6 +33,18 @@ class MainActivity : ComponentActivity() {
 
         // Init OneSignal
         //OneSignal.initWithContext(this, "f55d7e4d-c67d-49d3-b4c7-d6718aa8a504")
+
+        /*WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWork("MidnightPenalty")
+            .get()
+            .forEach { Timber.d("Worker state: ${it.state}") }*/
+        WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWorkLiveData("MidnightPenalty")
+            .observe(this) { workInfos ->
+                workInfos.forEach {
+                    Timber.d("Worker state: ${it.state}")
+                }
+            }
 
         enableEdgeToEdge()
         setContent {

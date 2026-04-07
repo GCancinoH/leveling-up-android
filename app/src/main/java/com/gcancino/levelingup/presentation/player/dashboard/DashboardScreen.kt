@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.core.SyncState
@@ -22,6 +23,8 @@ import com.gcancino.levelingup.presentation.player.dashboard.components.TodaySes
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.BodyCompositionViewModel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.CalendarViewmodel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.TasksViewModel
+import com.gcancino.levelingup.presentation.player.identity.IdentityCard
+import com.gcancino.levelingup.presentation.player.identity.IdentityViewModel
 import com.gcancino.levelingup.ui.components.DailyFlowCTACard
 import com.gcancino.levelingup.ui.components.calendar.WeeklyCalendar
 import com.gcancino.levelingup.ui.theme.BackgroundColor
@@ -35,11 +38,13 @@ import timber.log.Timber
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    bodyCompositionBottomSheetViewModel: BodyCompositionViewModel,
-    notificationViewModel: NotificationsViewModel,
-    tasksViewModel: TasksViewModel,
+    bodyCompositionBottomSheetViewModel: BodyCompositionViewModel = hiltViewModel(),
+    notificationViewModel: NotificationsViewModel = hiltViewModel(),
+    tasksViewModel: TasksViewModel = hiltViewModel(),
+    identityViewModel: IdentityViewModel = hiltViewModel(),
     onStartSession: (LocalDate) -> Unit,
-    onViewTasks: () -> Unit,
+    onSetupIdentity: () -> Unit,
+    onViewStandards: () -> Unit,
     onProfileClick: () -> Unit,
     onStartMorningFlow: () -> Unit,
     onStartEveningFlow: () -> Unit,
@@ -231,10 +236,15 @@ fun DashboardScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(2.dp))
-                TasksCard(
+                /*TasksCard(
                     viewModel    = tasksViewModel,
                     onViewAllTasks = { onViewTasks() },
                     onEmptyTasks = { viewModel.openTaskCreation() }
+                )*/
+                IdentityCard(
+                    viewModel = identityViewModel,
+                    onViewStandards = onViewStandards,
+                    onSetupIdentity = onSetupIdentity
                 )
                 Spacer(modifier = Modifier.height(4.dp))
             }

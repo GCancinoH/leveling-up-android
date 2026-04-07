@@ -19,6 +19,9 @@ import com.gcancino.levelingup.presentation.player.dailyTasks.EveningFlowScreen
 import com.gcancino.levelingup.presentation.player.dailyTasks.MorningFlowScreen
 import com.gcancino.levelingup.presentation.player.dailyTasks.TasksScreen
 import com.gcancino.levelingup.presentation.player.dashboard.DashboardScreen
+import com.gcancino.levelingup.presentation.player.identity.IdentitySetupScreen
+import com.gcancino.levelingup.presentation.player.identity.IdentityWallScreen
+import com.gcancino.levelingup.presentation.player.identity.StandardsScreen
 import com.gcancino.levelingup.presentation.player.profile.ProfileScreen
 import com.gcancino.levelingup.presentation.player.session.SessionPlayerScreen
 import com.gcancino.levelingup.ui.theme.BackgroundColor
@@ -108,12 +111,9 @@ fun Navigation() {
                         .toEpochMilli()
                     navController.navigate("sessionPlayer/$timestamp")
                 },
-                onViewTasks = {
-                    navController.navigate("tasks")
-                },
-                onProfileClick = {
-                    navController.navigate("profile")
-                },
+                onViewStandards = { navController.navigate("standards") },
+                onSetupIdentity = { navController.navigate("identitySetup") },
+                onProfileClick = { navController.navigate("profile") },
                 onStartMorningFlow = { navController.navigate("morningFlow") },
                 onStartEveningFlow = { navController.navigate("eveningFlow") }
             )
@@ -121,7 +121,9 @@ fun Navigation() {
 
         composable("profile") {
             ProfileScreen(
+                viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToIdentityWall = { navController.navigate("identity/wall") },
                 onSignOut = {
                     navController.navigate("signIn") {
                         popUpTo(0) { inclusive = true }
@@ -134,6 +136,24 @@ fun Navigation() {
             QuestStartedScreen(
                 viewModel      = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("standards") {
+            StandardsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable("identity/wall") {
+            IdentityWallScreen(
+                viewModel      = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("identitySetup") {
+            IdentitySetupScreen(
+                viewModel   = hiltViewModel(),
+                onCompleted = { navController.popBackStack() }
             )
         }
 

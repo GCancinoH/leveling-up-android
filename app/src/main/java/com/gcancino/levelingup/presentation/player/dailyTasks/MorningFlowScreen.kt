@@ -41,8 +41,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.presentation.player.dailyTasks.shared.ReflectionQuestionCard
+import com.gcancino.levelingup.presentation.player.dailyTasks.shared.resolveTexts
 import com.gcancino.levelingup.presentation.player.dailyTasks.viewModels.MorningFlowViewModel
 import com.gcancino.levelingup.ui.components.notifications.SystemNotificationOverlay
 import java.time.LocalDate
@@ -63,6 +65,8 @@ fun MorningFlowScreen(
     val penalty by viewModel.lastNightPenalty.collectAsState()
     val isLastStep by viewModel.isLastStep.collectAsState()
 
+    //val questionTexts = questions.associate { it.id to stringResource(it.textRes) }
+    val questionTexts = questions.resolveTexts()
 
     // Fixed: Use penalty != null as a key for remember
     var showPenaltySummary by remember(penalty != null) { mutableStateOf(penalty != null) }
@@ -161,7 +165,7 @@ fun MorningFlowScreen(
 
             Button(
                 onClick  = {
-                    if (isLastStep) viewModel.save()
+                    if (isLastStep) viewModel.save(questionTexts)
                     else viewModel.nextStep()
                 },
                 enabled = isCurrentAnswerValid && saveState !is Resource.Loading,

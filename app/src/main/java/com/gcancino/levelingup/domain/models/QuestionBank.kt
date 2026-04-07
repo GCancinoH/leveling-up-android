@@ -1,5 +1,6 @@
 package com.gcancino.levelingup.domain.models
 
+import com.gcancino.levelingup.R
 import java.time.LocalDate
 
 /**
@@ -21,93 +22,95 @@ object QuestionBank {
     // Gratitude
     val MORNING_ANCHOR = listOf(
         Question(
-            id       = "m_anchor_1",
-            text     = "What are three things you are genuinely grateful for today?",
-            hint     = "Be specific — 'my morning coffee' beats 'my health'",
+            id = "m_anchor_1",
+            textRes = R.string.qb_morningAnchor_1,
+            hint = R.string.qb_morningAnchor_1_hint,
             isAnchor = true
         ),
         Question(
-            id       = "m_anchor_2",
-            text     = "What would make today a great day?",
-            hint     = "Think in terms of actions, not outcomes",
+            id = "m_anchor_2",
+            textRes = R.string.qb_morningAnchor_2,
+            hint = R.string.qb_morningAnchor_2_hint,
             isAnchor = true
         ),
         Question(
-            id       = "m_anchor_3",
-            text     = "What is the single most important thing you must do today?",
-            hint     = "If you could only do one thing, what moves the needle most?",
+            id = "m_anchor_3",
+            textRes = R.string.qb_morningAnchor_3,
+            hint = R.string.qb_morningAnchor_3_hint,
             isAnchor = true
         )
     )
 
     // Values Alignment
     val MORNING_ROTATING = listOf(
-        Question("m_r_1",  "What kind of person do you want to be today? Name 3 qualities."),
-        Question("m_r_2",  "What fear or resistance might come up today, and how will you respond?"),
-        Question("m_r_3",  "Who in your life deserves more of your attention today?"),
-        Question("m_r_4",  "What is one thing you can do today that your future self will thank you for?"),
-        Question("m_r_5",  "If today were the last day of the year, what would matter most?"),
-        Question("m_r_6",  "What energy do you want to bring into your interactions today?"),
-        Question("m_r_7",  "What would the best version of you do today that the average version would avoid?"),
-        Question("m_r_8",  "What limiting belief might hold you back today, and what is the counter-truth?"),
-        Question("m_r_9",  "How can you be 1% better than yesterday in one specific area?"),
-        Question("m_r_10", "What does your body need from you today?"),
-        Question("m_r_11", "What relationship in your life needs intentional investment this week?"),
-        Question("m_r_12", "What is one thing you are avoiding that, if done, would create the most relief?"),
-        Question("m_r_13", "What would it look like to fully commit to your purpose today?"),
-        Question("m_r_14", "What assumption about today might be limiting you before it even starts?"),
-        Question("m_r_15", "If you could send a message to yourself tonight, what would you want it to say?")
+        Question("m_r_1", R.string.qb_morningRotating_1),
+        Question("m_r_2", R.string.qb_morningRotating_2),
+        Question("m_r_3", R.string.qb_morningRotating_3),
+        Question("m_r_4", R.string.qb_morningRotating_4),
+        Question("m_r_5", R.string.qb_morningRotating_5),
+        Question("m_r_6", R.string.qb_morningRotating_6),
+        Question("m_r_7", R.string.qb_morningRotating_7),
+        Question("m_r_8", R.string.qb_morningRotating_8),
+        Question("m_r_9", R.string.qb_morningRotating_9),
+        Question("m_r_10", R.string.qb_morningRotating_10),
+        Question("m_r_11", R.string.qb_morningRotating_11),
+        Question("m_r_12", R.string.qb_morningRotating_12),
+        Question("m_r_13", R.string.qb_morningRotating_13),
+        Question("m_r_14", R.string.qb_morningRotating_14),
+        Question("m_r_15", R.string.qb_morningRotating_15)
     )
 
     /**
      * Evening Anchor
      */
-
-    // CBT-proven: naming wins + struggles activates prefrontal cortex, reduces amygdala reactivity
     val EVENING_ANCHOR = listOf(
         Question(
-            id       = "e_anchor_1",
-            text     = "What were your biggest wins today — big or small?",
-            hint     = "Rewiring requires you to consciously notice progress",
+            id = "e_anchor_1",
+            textRes =  R.string.qb_eveningAnchor_1,
+            hint = R.string.qb_eveningAnchor_hint_1,
             isAnchor = true
         ),
         Question(
-            id       = "e_anchor_2",
-            text     = "What was the hardest moment today, and what did it teach you?",
-            hint     = "Reframing struggle as data is a core CBT technique",
+            id = "e_anchor_2",
+            textRes =  R.string.qb_eveningAnchor_2,
+            hint = R.string.qb_eveningAnchor_hint_2,
             isAnchor = true
         ),
         Question(
-            id       = "e_anchor_3",
-            text     = "On a scale of 1–10, how aligned was today with your values? What would have made it a 10?",
-            hint     = "Naming the gap between actual and ideal creates growth intention",
+            id = "e_anchor_3",
+            textRes =  R.string.qb_eveningAnchor_3,
+            hint = R.string.qb_eveningAnchor_hint_3,
+            isAnchor = true
+        ),
+        Question(
+            id       = "e_mirror",
+            textRes  = R.string.qb_mirrorMode,
             isAnchor = true
         )
+
     )
 
-    // CBT-style thought examination + deep introspection for neural rewiring
-
     val EVENING_ROTATING = listOf(
-        Question("e_r_1",  "What thought pattern showed up repeatedly today? Is it serving you?"),
-        Question("e_r_2",  "Where did you give your energy today — was it worth it?"),
-        Question("e_r_3",  "What emotion did you avoid feeling today, and what was underneath it?"),
-        Question("e_r_4",  "What did you say yes to that you should have said no to?"),
-        Question("e_r_5",  "What story did you tell yourself today that might not be true?"),
-        Question("e_r_6",  "Who did you show up for today, and how well did you do it?"),
-        Question("e_r_7",  "What decision today are you least at peace with? What would you change?"),
-        Question("e_r_8",  "What did your body tell you today that your mind ignored?"),
-        Question("e_r_9",  "Where did you operate from fear rather than intention?"),
-        Question("e_r_10", "What habit either served or sabotaged you today?"),
-        Question("e_r_11", "What would someone who deeply respects you say about how you spent today?"),
-        Question("e_r_12", "What unfinished thought or feeling has been following you all day?"),
-        Question("e_r_13", "What did you learn today that you want to remember in 5 years?"),
-        Question("e_r_14", "Where did you shrink today when you could have stepped up?"),
-        Question("e_r_15", "What conversation did you have (or avoid) that needs to happen?"),
-        Question("e_r_16", "What are you pretending not to know about a situation in your life?"),
-        Question("e_r_17", "How did you treat yourself today — would you treat a friend that way?"),
-        Question("e_r_18", "What pattern are you ready to break, and what would replacing it look like?"),
-        Question("e_r_19", "What are you tolerating in your life that is quietly draining your energy?"),
-        Question("e_r_20", "If today was a chapter in your life story, what would its title be?")
+        Question("e_r_1",  R.string.qb_eveningRotating_1),
+        Question("e_r_2",  R.string.qb_eveningRotating_2),
+        Question("e_r_3",  R.string.qb_eveningRotating_3),
+        Question("e_r_4",  R.string.qb_eveningRotating_4),
+        Question("e_r_5",  R.string.qb_eveningRotating_5),
+        Question("e_r_6",  R.string.qb_eveningRotating_6),
+        Question("e_r_7",  R.string.qb_eveningRotating_7),
+        Question("e_r_8",  R.string.qb_eveningRotating_8),
+        Question("e_r_9",  R.string.qb_eveningRotating_9),
+        Question("e_r_10", R.string.qb_eveningRotating_10),
+        Question("e_r_11", R.string.qb_eveningRotating_11),
+        Question("e_r_12", R.string.qb_eveningRotating_12),
+        Question("e_r_13", R.string.qb_eveningRotating_13),
+        Question("e_r_14", R.string.qb_eveningRotating_14),
+        Question("e_r_15", R.string.qb_eveningRotating_15),
+        Question("e_r_16", R.string.qb_eveningRotating_16),
+        Question("e_r_17", R.string.qb_eveningRotating_17),
+        Question("e_r_18", R.string.qb_eveningRotating_18),
+        Question("e_r_19", R.string.qb_eveningRotating_19),
+        Question("e_r_20", R.string.qb_eveningRotating_20)
     )
 
     // Daily selection model

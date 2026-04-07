@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    //alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
     alias(libs.plugins.ksp)
@@ -36,9 +35,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    /*kotlinOptions {
-        jvmTarget = "11"
-    }*/
+
     buildFeatures {
         compose = true
     }
@@ -61,7 +58,6 @@ dependencies {
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.lifecycle.extensions)
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
@@ -100,11 +96,9 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.runtime)
     ksp(libs.room.compiler)
     //kapt(libs.room.compiler)
-    annotationProcessor(libs.room.processor)
+    //annotationProcessor(libs.room.processor)
 
     // Camera
     implementation(libs.camerax.core)
@@ -140,6 +134,8 @@ dependencies {
     implementation(libs.reown.appKit)
     implementation(libs.kitizonwoseCal)
     implementation(libs.vico.compose)
+    implementation(libs.okHttp)
+    implementation(libs.guava)
 
     // Test
     testImplementation(libs.junit)

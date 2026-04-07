@@ -1,6 +1,7 @@
 package com.gcancino.levelingup.core.di
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
@@ -19,6 +20,11 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun providePenaltyPrefs(@ApplicationContext context: Context): SharedPreferences =
+        context.getSharedPreferences("penalty_prefs", Context.MODE_PRIVATE)
 
     /*@Provides
     @Singleton

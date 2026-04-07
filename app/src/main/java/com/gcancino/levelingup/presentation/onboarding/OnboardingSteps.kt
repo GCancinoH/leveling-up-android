@@ -9,10 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,10 +31,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,11 +56,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,20 +75,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
+import com.gcancino.levelingup.R
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.domain.models.bodyComposition.UnitSystem
 import com.gcancino.levelingup.domain.models.bodyComposition.cmToInches
 import com.gcancino.levelingup.domain.models.bodyComposition.inchesToCm
 import com.gcancino.levelingup.domain.models.bodyComposition.kgToLbs
 import com.gcancino.levelingup.domain.models.bodyComposition.lbsToKg
+import com.gcancino.levelingup.domain.models.identity.IdentityStandard
+import com.gcancino.levelingup.domain.models.identity.Role
+import com.gcancino.levelingup.domain.models.identity.StandardType
 import com.gcancino.levelingup.domain.models.onBoarding.OnboardingData
 import com.gcancino.levelingup.domain.models.player.Genders
 import com.gcancino.levelingup.domain.models.player.Improvement
@@ -81,7 +106,9 @@ import com.gcancino.levelingup.ui.theme.SystemColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import kotlin.system.exitProcess
+import androidx.core.graphics.toColorInt
 
 /**
  * Step 0: Welcome
@@ -551,10 +578,628 @@ fun OnboardingPhotosStep(
     }
 }
 
-// ─── Shared layout for steps ──────────────────────────────────────────────────────
+// Onboarding IdentityStep
+@Composable
+fun OnboardingIdentityStep(
+    initialStatement: String,
+    initialRoles: List<Role>,
+    initialStandards: List<IdentityStandard>,
+    onNext: (statement: String, roles: List<Role>, standards: List<IdentityStandard>) -> Unit,
+    onBack: () -> Unit
+) {
+    var statement    by remember { mutableStateOf(initialStatement) }
+    var roles        by remember { mutableStateOf(initialRoles) }
+    var standards    by remember { mutableStateOf(initialStandards) }
+    var showAddSheet by remember { mutableStateOf(false) }
+    var showRoleSheet by remember { mutableStateOf(false) }
+    var addStandardForRole by remember { mutableStateOf<Role?>(null) }
+
+    val hasTraining = standards.any { it.type == StandardType.TRAINING }
+    val isValid     = statement.isNotBlank() && roles.isNotEmpty() && standards.isNotEmpty()
+
+    OnboardingStepLayout(
+        title    = stringResource(R.string.identity_title),
+        subtitle = stringResource(R.string.identity_subtitle),
+        onBack   = onBack,
+        onNext   = { onNext(statement, roles, standards) },
+        onDismiss = { onNext(statement, roles, standards) },
+        isValid  = isValid
+    ) {
+        // ── Identity statement ────────────────────────────────────────────────────
+        Text(
+            stringResource(R.string.identity_prefix) + "...",
+            style      = MaterialTheme.typography.labelLarge,
+            color      = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value         = statement,
+            onValueChange = { statement = it },
+            placeholder   = { Text(stringResource(R.string.identity_placeholder), color = Color.DarkGray) },
+            modifier      = Modifier.fillMaxWidth(),
+            singleLine    = true,
+            prefix        = { Text(stringResource(R.string.identity_prefix), color = Color.Gray) },
+            colors        = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor   = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color.DarkGray,
+                focusedTextColor     = Color.White,
+                unfocusedTextColor   = Color.White,
+                cursorColor          = MaterialTheme.colorScheme.primary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            stringResource(R.string.identity_daily_intro),
+            style  = MaterialTheme.typography.bodySmall,
+            color  = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ── Roles section ─────────────────────────────────────────────────────────
+        Text(
+            stringResource(R.string.identity_my_roles),
+            style         = MaterialTheme.typography.labelLarge,
+            color         = MaterialTheme.colorScheme.primary,
+            fontWeight    = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (roles.isEmpty()) {
+            Text(
+                stringResource(R.string.identity_no_roles_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        roles.forEach { role ->
+            RoleDeclaredRow(
+                role       = role,
+                onRemove   = {
+                    roles = roles.filter { it.id != role.id }
+                    standards = standards.filter { it.roleId != role.id }
+                }
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+
+        if (roles.size < 5) {
+            OutlinedButton(
+                onClick  = { showRoleSheet = true },
+                modifier = Modifier.fillMaxWidth(),
+                border   = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.identity_add_role), color = MaterialTheme.colorScheme.primary)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ── Standards grouped by role ─────────────────────────────────────────────
+        if (roles.isNotEmpty()) {
+            Text(
+                stringResource(R.string.identity_daily_standards_header),
+                style         = MaterialTheme.typography.labelLarge,
+                color         = MaterialTheme.colorScheme.primary,
+                fontWeight    = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Training suggestion (attached to first role if exists)
+            if (!hasTraining && roles.isNotEmpty()) {
+                val trainLabel = stringResource(R.string.identity_train_label)
+                StandardSuggestionChip(
+                    icon  = Icons.Default.FitnessCenter,
+                    label = trainLabel,
+                    color = Color(0xFF7986CB),
+                    hint  = stringResource(R.string.identity_train_hint),
+                    onClick = {
+                        standards = standards + IdentityStandard(
+                            id = UUID.randomUUID().toString(),
+                            roleId = roles.first().id,
+                            uID = "",
+                            title = trainLabel,
+                            type = StandardType.TRAINING,
+                            xpReward = 25
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Group standards by role
+            roles.forEach { role ->
+                val roleStandards = standards.filter { it.roleId == role.id }
+
+                // Role header
+                Row(
+                    modifier          = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        role.icon,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        role.name,
+                        style      = MaterialTheme.typography.bodyMedium,
+                        color      = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (roleStandards.size < 5) {
+                        IconButton(
+                            onClick  = { addStandardForRole = role },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.Add, null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                // Standards for this role
+                roleStandards.forEach { standard ->
+                    StandardDeclaredRow(
+                        standard = standard,
+                        onRemove = { standards = standards.filter { it.id != standard.id } }
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                if (roleStandards.isEmpty()) {
+                    Text(
+                        stringResource(R.string.identity_add_standard),
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = Color.Gray,
+                        modifier = Modifier
+                            .padding(start = 28.dp, bottom = 8.dp)
+                            .clickable { addStandardForRole = role }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Info note
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF1C1C2E)
+        ) {
+            Text(
+                stringResource(R.string.identity_info_note),
+                style    = MaterialTheme.typography.bodySmall,
+                color    = Color.Gray,
+                modifier = Modifier.padding(12.dp),
+                lineHeight = 18.sp
+            )
+        }
+    }
+
+    // ── Sheet to add standard ─────────────────────────────────────────────────────
+    if (showAddSheet || addStandardForRole != null) {
+        val targetRole = addStandardForRole
+        AddStandardSheet(
+            roles         = roles,
+            preselectedRole = targetRole,
+            onAdd         = { title, type, xp, roleId ->
+                standards = standards + IdentityStandard(
+                    id       = UUID.randomUUID().toString(),
+                    roleId   = roleId,
+                    uID      = "",
+                    title    = title,
+                    type     = type,
+                    xpReward = xp
+                )
+                showAddSheet = false
+                addStandardForRole = null
+            },
+            onDismiss = {
+                showAddSheet = false
+                addStandardForRole = null
+            }
+        )
+    }
+
+    // ── Sheet to add role ─────────────────────────────────────────────────────────
+    if (showRoleSheet) {
+        AddRoleSheet(
+            onAdd     = { name, icon, color ->
+                roles = roles + Role(
+                    id    = UUID.randomUUID().toString(),
+                    name  = name,
+                    icon  = icon,
+                    color = color
+                )
+                showRoleSheet = false
+            },
+            onDismiss = { showRoleSheet = false }
+        )
+    }
+}
+
+// ─── Auxiliary components ─────────────────────────────────────────────────────────
 
 @Composable
-private fun OnboardingStepLayout(
+private fun StandardSuggestionChip(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    hint: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape    = RoundedCornerShape(12.dp),
+        color    = color.copy(alpha = 0.1f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier          = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White, fontWeight = FontWeight.Medium)
+                Text(hint, style = MaterialTheme.typography.labelSmall, color = color)
+            }
+            Icon(Icons.Default.Add, null, tint = color, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun RoleDeclaredRow(
+    role: Role,
+    onRemove: () -> Unit
+) {
+    val roleColor = try { Color("#${role.color}".toColorInt()) } catch (_: Exception) { Color(0xFF7986CB) }
+    Row(
+        modifier          = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1C1C1E), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier         = Modifier
+                .size(32.dp)
+                .background(roleColor.copy(alpha = 0.15f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(role.icon, style = MaterialTheme.typography.bodyMedium)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(role.name, style = MaterialTheme.typography.bodyMedium,
+            color = Color.White, fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f))
+        IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun StandardDeclaredRow(
+    standard: IdentityStandard,
+    onRemove: () -> Unit
+) {
+    val iconPainter = when (standard.type) {
+        StandardType.TRAINING  -> rememberVectorPainter(Icons.Default.FitnessCenter)
+        StandardType.NUTRITION -> rememberVectorPainter(Icons.Default.Restaurant)
+        StandardType.SLEEP     -> rememberVectorPainter(Icons.Default.Bedtime)
+        StandardType.MINDSET   -> painterResource(R.drawable.brain)
+        StandardType.DEEP_WORK -> rememberVectorPainter(Icons.Default.Computer)
+        StandardType.LEARNING  -> rememberVectorPainter(Icons.Default.AutoStories)
+        StandardType.FINANCE   -> rememberVectorPainter(Icons.Default.AttachMoney)
+        StandardType.CUSTOM    -> rememberVectorPainter(Icons.Default.Star)
+    }
+
+    val color = when (standard.type) {
+        StandardType.TRAINING  -> Color(0xFF4FC3F7) // Electric Blue
+        StandardType.NUTRITION -> Color(0xFF66BB6A) // Green
+        StandardType.SLEEP     -> Color(0xFF5C6BC0) // Indigo
+        StandardType.MINDSET   -> Color(0xFFBB86FC) // Purple
+        StandardType.DEEP_WORK -> Color(0xFFFF7043) // Orange
+        StandardType.LEARNING  -> Color(0xFF26A69A) // Teal
+        StandardType.FINANCE   -> Color(0xFFFFCA28) // Amber
+        StandardType.CUSTOM    -> Color(0xFF9E9E9E) // Gray
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1C1C1E), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .background(color.copy(alpha = 0.15f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = iconPainter,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(standard.title, style = MaterialTheme.typography.bodySmall,
+                color = Color.White, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.identity_xp_per_day, standard.xpReward),
+                style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        }
+        IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun AddStandardSheet(
+    roles: List<Role>,
+    preselectedRole: Role?,
+    onAdd: (title: String, type: StandardType, xp: Int, roleId: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(StandardType.CUSTOM) }
+    var selectedRoleId by remember { mutableStateOf(preselectedRole?.id ?: roles.firstOrNull()?.id ?: "") }
+    val xpMap = mapOf(
+        StandardType.TRAINING  to 25,
+        StandardType.NUTRITION to 20,
+        StandardType.SLEEP     to 15,
+        StandardType.CUSTOM    to 10
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1C1C1E),
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(stringResource(R.string.identity_new_standard),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold, color = Color.White)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value         = title,
+                onValueChange = { title = it },
+                label         = { Text(stringResource(R.string.identity_standard_question)) },
+                modifier      = Modifier.fillMaxWidth(),
+                singleLine    = true,
+                colors        = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor  = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = Color.DarkGray,
+                    focusedTextColor    = Color.White,
+                    unfocusedTextColor  = Color.White,
+                    focusedLabelColor   = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = Color.Gray,
+                    cursorColor         = MaterialTheme.colorScheme.primary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Role selector
+            Text(stringResource(R.string.identity_standard_role),
+                style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement   = Arrangement.spacedBy(8.dp)
+            ) {
+                roles.forEach { role ->
+                    FilterChip(
+                        selected = selectedRoleId == role.id,
+                        onClick  = { selectedRoleId = role.id },
+                        label    = { Text("${role.icon} ${role.name}") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Type selector with FlowRow
+            Text(stringResource(R.string.identity_standard_type),
+                style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement   = Arrangement.spacedBy(4.dp)
+            ) {
+                StandardType.entries.forEach { type ->
+                    FilterChip(
+                        selected = selectedType == type,
+                        onClick  = { selectedType = type },
+                        label    = {
+                            Text(type.name.lowercase()
+                                .replaceFirstChar { it.uppercase() })
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.identity_standard_xp_hint, xpMap[selectedType] ?: 10),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick  = {
+                    if (title.isNotBlank() && selectedRoleId.isNotBlank()) {
+                        onAdd(title.trim(), selectedType, xpMap[selectedType] ?: 10, selectedRoleId)
+                    }
+                },
+                enabled  = title.isNotBlank() && selectedRoleId.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape    = RoundedCornerShape(16.dp)
+            ) {
+                Text(stringResource(R.string.identity_add_standard_button), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddRoleSheet(
+    onAdd: (name: String, icon: String, color: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var roleName by remember { mutableStateOf("") }
+    val icons = listOf("⚡", "🏋️", "📈", "📚", "🎯", "💻", "🎨", "🧘", "🍎", "💤")
+    var selectedIcon by remember { mutableStateOf(icons.first()) }
+    val colors = listOf("4FC3F7", "66BB6A", "BB86FC", "FF7043", "EF5350", "FFCA28", "26A69A", "F06292")
+    var selectedColor by remember { mutableStateOf(colors.first()) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1C1C1E),
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(stringResource(R.string.identity_new_role),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold, color = Color.White)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value         = roleName,
+                onValueChange = { roleName = it },
+                label         = { Text(stringResource(R.string.identity_role_name_label)) },
+                placeholder   = { Text(stringResource(R.string.identity_role_name_placeholder), color = Color.DarkGray) },
+                modifier      = Modifier.fillMaxWidth(),
+                singleLine    = true,
+                colors        = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor   = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = Color.DarkGray,
+                    focusedTextColor     = Color.White,
+                    unfocusedTextColor   = Color.White,
+                    focusedLabelColor    = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor  = Color.Gray,
+                    cursorColor          = MaterialTheme.colorScheme.primary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Icon picker
+            Text("Icon", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
+                icons.forEach { icon ->
+                    val isSelected = selectedIcon == icon
+                    Surface(
+                        shape    = CircleShape,
+                        color    = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else Color.Transparent,
+                        border   = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable { selectedIcon = icon }
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(icon, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Color picker
+            Text("Color", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
+                colors.forEach { hex ->
+                    val c = try { Color("#$hex".toColorInt()) } catch (_: Exception) { Color(0xFF7986CB) }
+                    val isSelected = selectedColor == hex
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(c, CircleShape)
+                            .then(
+                                if (isSelected) Modifier.background(Color.Transparent, CircleShape)
+                                else Modifier
+                            )
+                            .clickable { selectedColor = hex }
+                    ) {
+                        if (isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Transparent, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick  = { if (roleName.isNotBlank()) onAdd(roleName.trim(), selectedIcon, selectedColor) },
+                enabled  = roleName.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape    = RoundedCornerShape(16.dp)
+            ) {
+                Text(stringResource(R.string.identity_add_role), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// Shared layout for steps
+@Composable
+fun OnboardingStepLayout(
     title: String,
     subtitle: String,
     onBack: () -> Unit,

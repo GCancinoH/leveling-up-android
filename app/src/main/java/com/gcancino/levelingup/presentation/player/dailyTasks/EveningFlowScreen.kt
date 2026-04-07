@@ -41,9 +41,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.presentation.player.dailyTasks.shared.ReflectionQuestionCard
 import com.gcancino.levelingup.presentation.player.dailyTasks.shared.TaskCreationStep
+import com.gcancino.levelingup.presentation.player.dailyTasks.shared.resolveTexts
 import com.gcancino.levelingup.presentation.player.dailyTasks.viewModels.EveningFlowViewModel
 import com.gcancino.levelingup.ui.components.notifications.SystemNotificationOverlay
 import java.time.LocalDate
@@ -65,6 +67,9 @@ fun EveningFlowScreen(
     val isLastStep by viewModel.isLastStep.collectAsState()
     val canAddMoreTasks by viewModel.canAddMoreTasks.collectAsState()
     var showSystemMessage by remember { mutableStateOf(false) }
+
+    //val questionTexts = questions.associate { it.id to stringResource(it.textRes) }
+    val questionTexts = questions.resolveTexts()
 
     LaunchedEffect(saveState) {
         if (saveState is Resource.Success) showSystemMessage = true
@@ -154,7 +159,7 @@ fun EveningFlowScreen(
 
             Button(
                 onClick  = {
-                    if (isLastStep) viewModel.save()
+                    if (isLastStep) viewModel.save(questionTexts)
                     else viewModel.nextStep()
                 },
                 enabled  = isCurrentAnswerValid && saveState !is Resource.Loading,

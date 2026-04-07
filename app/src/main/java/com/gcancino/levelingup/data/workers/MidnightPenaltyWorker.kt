@@ -11,54 +11,37 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import timber.log.Timber
 import androidx.core.content.edit
+import com.gcancino.levelingup.domain.logic.DailyResetManager
 
 @HiltWorker
 class MidnightPenaltyWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val dailyRepository: DailyTasksRepositoryImpl,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val dailyResetManager: DailyResetManager
 ) : CoroutineWorker(context, params) {
 
     private val TAG = "MidnightPenaltyWorker"
 
-    // ── Store penalty result in SharedPreferences so morning flow can show summary
-    private val prefs = context.getSharedPreferences("penalty_prefs", Context.MODE_PRIVATE)
-
     override suspend fun doWork(): Result {
-        Timber.tag(TAG).d("─── MidnightPenaltyWorker started ──────────────────")
+        Timber.tag(TAG).d("MidnightPenaltyWorker started (backup)")
 
-        val uID = auth.currentUser?.uid ?: run {
-            Timber.tag(TAG).w("No authenticated user — skipping penalty check")
+        val uid = auth.currentUser?.uid ?: run {
+            Timber.tag(TAG).w("No authenticated user — skipping")
             return Result.success()
         }
 
-        return when (val result = dailyRepository.applyMidnightPenalty(uID)) {
-            is Resource.Success -> {
-                val penalty = result.data
-                if (penalty != null) {
-                    // Store penalty summary for morning flow to read
-                    prefs.edit {
-                        putInt("last_penalty_xp_lost", penalty.xpLost)
-                            .putInt("last_penalty_streak_lost", penalty.streakLost)
-                            .putInt("last_penalty_tasks_count", penalty.incompleteTasks.size)
-                            .putLong("last_penalty_date", penalty.date.time)
-                    }
-
-                    Timber.tag(TAG).i(
-                        "%skull", "✔ Penalty applied → XP: -${penalty.xpLost} | " +
-                                "streak: -${penalty.streakLost} | "
-                    )
-                } else {
-                    Timber.tag(TAG).i("✔ No penalty — all tasks completed")
-                }
-                Result.success()
-            }
-            is Resource.Error -> {
-                Timber.tag(TAG).e("Penalty worker failed: ${result.message}")
-                Result.retry()
-            }
-            else -> Result.retry()
+        return try {
+            // DailyResetManager is idempotent — safe to call multiple times
+            val penalty = dailyResetManager.evaluateAndApply(uid)
+            Timber.tag(TAG).i(
+                if (penalty != null) "✔ Backup penalty applied → -${penalty.xpLost} XP"
+                else "✔ No penalty needed (already applied on app open, or nothing to penalize)"
+            )
+            Result.success()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "MidnightPenaltyWorker failed")
+            Result.retry()
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.gcancino.levelingup.data.local.database.entities.bodyData
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.Date

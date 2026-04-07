@@ -136,7 +136,7 @@ class EveningFlowViewModel @Inject constructor(
     val canAddMoreTasks: StateFlow<Boolean> = _tasks.map { it.size < 5 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    fun save() {
+    fun save(questionTexts: Map<String, String>) {
         val uID = auth.currentUser?.uid ?: run {
             _saveState.value = Resource.Error("Not authenticated"); return
         }
@@ -149,7 +149,7 @@ class EveningFlowViewModel @Inject constructor(
                 date = Date(),
                 answers = questions.mapNotNull { q ->
                     _answers.value[q.id]?.let { answer ->
-                        ReflectionAnswer(q.id, q.text, answer)
+                        ReflectionAnswer(q.id, questionTexts[q.id] ?: "", answer)
                     }
                 },
                 isSynced = false
