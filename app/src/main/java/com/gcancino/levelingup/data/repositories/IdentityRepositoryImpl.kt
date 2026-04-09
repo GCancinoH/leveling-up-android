@@ -264,6 +264,10 @@ class IdentityRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun autoValidateNutrition(uID: String): Resource<Unit> {
+        TODO("Not yet implemented")
+    }
+
     // ─── Penalización de medianoche ───────────────────────────────────────────────
     override suspend fun applyMidnightPenalty(uID: String): Resource<Unit> {
         return try {

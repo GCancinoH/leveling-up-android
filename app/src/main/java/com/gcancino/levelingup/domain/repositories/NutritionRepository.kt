@@ -4,6 +4,7 @@ import android.net.Uri
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.domain.models.nutrition.MacroSummary
 import com.gcancino.levelingup.domain.models.nutrition.NutritionEntry
+import com.gcancino.levelingup.domain.models.nutrition.NutritionStandardDto
 import kotlinx.coroutines.flow.Flow
 
 interface NutritionRepository {
@@ -11,9 +12,8 @@ interface NutritionRepository {
         uID: String,
         imageUri: Uri,
         identityStatement: String,
-        nutritionStandardTitles: List<String>
+        nutritionStandards: List<NutritionStandardDto>
     ): Resource<NutritionEntry>
-
     fun observeTodayEntries(uID: String): Flow<List<NutritionEntry>>
     fun observeTodayMacros(uID: String): Flow<MacroSummary>
     fun observeAlignedCountToday(uID: String): Flow<Int>

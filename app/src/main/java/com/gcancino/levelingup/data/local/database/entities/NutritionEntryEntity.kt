@@ -16,11 +16,13 @@ data class NutritionEntryEntity(
     val carbsG: Float,
     val fatsG: Float,
     val fiberG: Float,
-    val microHighlights: String = "[]",  // JSON List<String>
-    val microConcerns: String   = "[]",  // JSON List<String>
+    val microHighlights: String = "[]",
+    val microConcerns: String   = "[]",
     val processingLevel: String = "UNKNOWN",
-    val alignment: String,               // NutritionAlignment.name
+    val alignment: String,
     val alignmentReason: String,
     val suggestion: String,
+    val alignmentScore: Float = 0f,
+    val action: String = "",
     val isSynced: Boolean = false
 )

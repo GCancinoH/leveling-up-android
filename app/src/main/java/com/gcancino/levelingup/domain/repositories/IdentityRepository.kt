@@ -16,6 +16,7 @@ interface IdentityRepository {
     fun observePendingEntries(uID: String): Flow<List<DailyStandardEntry>>
     suspend fun completeStandard(entryId: String, uID: String): Resource<Int>
     suspend fun autoValidateTraining(uID: String): Resource<Unit>
+    suspend fun autoValidateNutrition(uID: String): Resource<Unit>
     suspend fun applyMidnightPenalty(uID: String): Resource<Unit>
     suspend fun syncUnsynced(): Resource<Unit>
 }

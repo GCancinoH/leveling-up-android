@@ -10,32 +10,22 @@ data class NutritionEntry(
     val uID: String,
     @Serializable(with = DateSerializer::class)
     val date: Date,
-
-    // What the LLM identified
     val foodIdentified: String,
-    val photoUrl: String = "",     // uploaded to Firebase Storage
-
-    // Macros — always computed with Atwater in Python, not LLM
+    val photoUrl: String = "",
     val calories: Int,
     val proteinG: Float,
     val carbsG: Float,
     val fatsG: Float,
     val fiberG: Float,
-
-    // Micronutrients
-    val microHighlights: List<String> = emptyList(),
-    val microConcerns: List<String>   = emptyList(),
-
-    // Processing level
+    val microHighlights: List<String>    = emptyList(),
+    val microConcerns: List<String>      = emptyList(),
     val processingLevel: ProcessingLevel = ProcessingLevel.UNKNOWN,
-
-    // Identity framing — the core differentiator
     val alignment: NutritionAlignment,
     val alignmentReason: String,
     val suggestion: String,
-
+    val alignmentScore: Float = 0f,      // 0.0–1.0, calculado en Python
+    val action: NutritionAction? = null,
     val isSynced: Boolean = false
 ) {
-    // Daily macros helper for the nutrition dashboard
     val macroSummary get() = MacroSummary(calories, proteinG, carbsG, fatsG, fiberG)
 }

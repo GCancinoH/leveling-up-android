@@ -50,31 +50,25 @@ class NutritionRepositoryImpl @Inject constructor(
         .build()
 
     // ─── Analyze food photo ───────────────────────────────────────────────────
-
     override suspend fun analyzeFood(
         uID: String,
         imageUri: Uri,
         identityStatement: String,
-        nutritionStandardTitles: List<String>
+        nutritionStandards: List<NutritionStandardDto>  // ← cambio de firma
     ): Resource<NutritionEntry> {
         return try {
-            // 1. Copy URI to temp file (OkHttp needs a File)
             val tempFile = copyUriToTempFile(imageUri)
                 ?: return Resource.Error("Failed to read image")
 
-            // 2. Build multipart request
-            val standardsJson = gson.toJson(
-                nutritionStandardTitles.mapIndexed { i, title ->
-                    mapOf("id" to "s$i", "title" to title)
-                }
-            )
+            // FIX 1: standards llegan con IDs reales, no índices generados
+            val standardsJson = gson.toJson(nutritionStandards.map {
+                mapOf("id" to it.id, "title" to it.title)
+            })
 
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart(
-                    "image", tempFile.name,
-                    tempFile.asRequestBody("image/jpeg".toMediaType())
-                )
+                .addFormDataPart("image", tempFile.name,
+                    tempFile.asRequestBody("image/jpeg".toMediaType()))
                 .addFormDataPart("identity_statement", identityStatement)
                 .addFormDataPart("nutrition_standards", standardsJson)
                 .build()
@@ -84,23 +78,15 @@ class NutritionRepositoryImpl @Inject constructor(
                 .post(requestBody)
                 .build()
 
-            // 3. Call Flask
             val response = http.newCall(request).execute()
             tempFile.delete()
 
-            if (!response.isSuccessful) {
-                return Resource.Error("Analysis failed: ${response.code}")
-            }
+            if (!response.isSuccessful) return Resource.Error("Analysis failed: ${response.code}")
 
-            val json = JSONObject(response.body.string())
-
-            // 4. Upload photo to Firebase Storage (async, non-blocking)
+            val json     = JSONObject(response.body.string())
             val photoUrl = uploadPhotoToStorage(uID, imageUri)
-
-            // 5. Parse response and save to Room
-            val entry = parseAndSave(uID, json, photoUrl)
-            Timber.tag(TAG).i("✔ Food analyzed → ${entry.foodIdentified} | ${entry.alignment}")
-
+            val entry    = parseAndSave(uID, json, photoUrl)
+            Timber.tag(TAG).i("✔ Food analyzed → ${entry.foodIdentified} | score: ${entry.alignmentScore}")
             Resource.Success(entry)
 
         } catch (e: Exception) {
@@ -110,7 +96,6 @@ class NutritionRepositoryImpl @Inject constructor(
     }
 
     // ─── Observations ─────────────────────────────────────────────────────────
-
     override fun observeTodayEntries(uID: String): Flow<List<NutritionEntry>> {
         val (start, end) = timeProvider.dayBoundaries(timeProvider.today())
         return nutritionDao.observeForDay(uID, start, end)
@@ -132,7 +117,6 @@ class NutritionRepositoryImpl @Inject constructor(
         nutritionDao.observeRecent(uID).map { it.map { e -> e.toDomain() } }
 
     // ─── Sync ─────────────────────────────────────────────────────────────────
-
     override suspend fun syncUnsynced(): Resource<Unit> {
         return try {
             val unsynced = nutritionDao.getUnsynced()
@@ -141,7 +125,7 @@ class NutritionRepositoryImpl @Inject constructor(
             val batch = firestore.batch()
             unsynced.forEach { entry ->
                 val ref = firestore.collection("nutrition_entries").document(entry.id)
-                batch.set(ref, entry.toFirestoreMap())
+                batch.set(ref, entry.toDomain())
             }
             batch.commit().await()
             nutritionDao.markAsSynced(unsynced.map { it.id })
@@ -154,7 +138,6 @@ class NutritionRepositoryImpl @Inject constructor(
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
-
     private fun parseAndSave(uID: String, json: JSONObject, photoUrl: String): NutritionEntry {
         val macros = json.optJSONObject("macros")
         val micros = json.optJSONObject("micros")
@@ -166,6 +149,21 @@ class NutritionRepositoryImpl @Inject constructor(
         val concerns: List<String> = micros?.optJSONArray("concerns")?.let { arr ->
             (0 until arr.length()).map { arr.getString(it) }
         } ?: emptyList()
+
+        // FIX 3 — parse action from Flask response
+        val action: NutritionAction? = json.optJSONObject("action")?.let { actionJson ->
+            val typeStr = actionJson.optString("type", "NONE")
+            val type    = try { NutritionActionType.valueOf(typeStr) }
+            catch (e: Exception) { NutritionActionType.NONE }
+
+            val payload = actionJson.optJSONObject("payload")
+            NutritionAction(
+                type       = type,
+                taskTitle  = payload?.optString("task_title")?.takeIf { it.isNotBlank() && it != "null" },
+                standardId = payload?.optString("standard_id")?.takeIf { it.isNotBlank() && it != "null" },
+                message    = payload?.optString("message")?.takeIf { it.isNotBlank() && it != "null" }
+            )
+        }
 
         val entry = NutritionEntry(
             id              = UUID.randomUUID().toString(),
@@ -184,14 +182,12 @@ class NutritionRepositoryImpl @Inject constructor(
             alignment       = parseAlignment(json.optString("alignment")),
             alignmentReason = json.optString("alignment_reason", ""),
             suggestion      = json.optString("suggestion", ""),
+            alignmentScore  = json.optDouble("alignment_score", 0.5).toFloat(), // FIX 2
+            action          = action,  // FIX 3
             isSynced        = false
         )
 
-        // Fire-and-forget Room insert — caller collects from Flow
-        kotlinx.coroutines.runBlocking {
-            nutritionDao.insert(entry.toEntity())
-        }
-
+        kotlinx.coroutines.runBlocking { nutritionDao.insert(entry.toEntity()) }
         return entry
     }
 
@@ -233,25 +229,26 @@ class NutritionRepositoryImpl @Inject constructor(
     }
 
     // ─── Mappers ──────────────────────────────────────────────────────────────
-
     private fun NutritionEntry.toEntity() = NutritionEntryEntity(
-        id = id,
-        uID = uID,
-        date = date,
-        foodIdentified = foodIdentified,
-        photoUrl = photoUrl,
-        calories = calories,
-        proteinG = proteinG,
-        carbsG = carbsG,
-        fatsG = fatsG,
-        fiberG = fiberG,
+        id              = id,
+        uID             = uID,
+        date            = date,
+        foodIdentified  = foodIdentified,
+        photoUrl        = photoUrl,
+        calories        = calories,
+        proteinG        = proteinG,
+        carbsG          = carbsG,
+        fatsG           = fatsG,
+        fiberG          = fiberG,
         microHighlights = gson.toJson(microHighlights),
-        microConcerns = gson.toJson(microConcerns),
+        microConcerns   = gson.toJson(microConcerns),
         processingLevel = processingLevel.name,
-        alignment = alignment.name,
+        alignment       = alignment.name,
         alignmentReason = alignmentReason,
-        suggestion = suggestion,
-        isSynced = false
+        suggestion      = suggestion,
+        alignmentScore  = alignmentScore,       // FIX 2
+        action          = action?.let { gson.toJson(it) } ?: "",  // FIX 3
+        isSynced        = false
     )
 
     private fun NutritionEntryEntity.toDomain(): NutritionEntry {
@@ -273,23 +270,11 @@ class NutritionRepositoryImpl @Inject constructor(
             alignment       = parseAlignment(alignment),
             alignmentReason = alignmentReason,
             suggestion      = suggestion,
+            alignmentScore  = alignmentScore,   // FIX 2
+            action          = if (action.isNotBlank())
+                gson.fromJson(action, NutritionAction::class.java)
+            else null,        // FIX 3
             isSynced        = isSynced
         )
     }
-
-    private fun NutritionEntryEntity.toFirestoreMap() = mapOf(
-        "id"              to id,
-        "uID"             to uID,
-        "date"            to date,
-        "foodIdentified"  to foodIdentified,
-        "photoUrl"        to photoUrl,
-        "calories"        to calories,
-        "proteinG"        to proteinG,
-        "carbsG"          to carbsG,
-        "fatsG"           to fatsG,
-        "fiberG"          to fiberG,
-        "alignment"       to alignment,
-        "alignmentReason" to alignmentReason,
-        "isSynced"        to true
-    )
 }
