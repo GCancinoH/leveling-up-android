@@ -104,6 +104,8 @@ fun Navigation() {
                 bodyCompositionBottomSheetViewModel = hiltViewModel(),
                 notificationViewModel = hiltViewModel(),
                 tasksViewModel = hiltViewModel(),
+                activeQuestViewModel = hiltViewModel(),
+                identityViewModel = hiltViewModel(),
                 onStartSession = { date: LocalDate ->
                     val timestamp = date
                         .atStartOfDay(ZoneId.systemDefault())

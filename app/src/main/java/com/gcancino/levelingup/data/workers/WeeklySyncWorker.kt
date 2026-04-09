@@ -8,6 +8,7 @@ import com.gcancino.levelingup.data.local.database.dao.DailyStandardEntryDao
 import com.gcancino.levelingup.data.local.database.dao.IdentityProfileDao
 import com.gcancino.levelingup.data.local.database.dao.WeeklyReportDao
 import com.gcancino.levelingup.data.local.database.entities.WeeklyReportEntity
+import com.gcancino.levelingup.domain.logic.GeneratedQuestManager
 import com.gcancino.levelingup.domain.models.identity.IdentityStandard
 import com.gcancino.levelingup.domain.models.identity.Role
 import com.google.firebase.auth.FirebaseAuth
@@ -38,7 +39,8 @@ class WeeklySyncWorker @AssistedInject constructor(
     private val auth: FirebaseAuth,
     private val identityProfileDao: IdentityProfileDao,
     private val standardEntryDao: DailyStandardEntryDao,
-    private val weeklyReportDao: WeeklyReportDao
+    private val weeklyReportDao: WeeklyReportDao,
+    private val generatedQuestManager: GeneratedQuestManager
 ) : CoroutineWorker(context, params) {
 
     private val TAG = "WeeklySyncWorker"
@@ -127,9 +129,10 @@ class WeeklySyncWorker @AssistedInject constructor(
 
         val json = JSONObject(response.body.string())
 
+        val reportId = UUID.randomUUID().toString()
         weeklyReportDao.insert(
             WeeklyReportEntity(
-                id                = UUID.randomUUID().toString(),
+                id                = reportId,
                 uID               = uid,
                 weekStart         = Date(startMs),
                 overallScore      = json.optDouble("overall_score", 0.0).toFloat(),
@@ -145,5 +148,14 @@ class WeeklySyncWorker @AssistedInject constructor(
             )
         )
         Timber.tag(TAG).i("✔ Weekly report saved")
+
+        val generatedQuestJson = json.optJSONObject("generated_quest")
+        if (generatedQuestJson != null) {
+            val questMap: Map<String, Any> = gson.fromJson(
+                generatedQuestJson.toString(),
+                object : TypeToken<Map<String, Any>>() {}.type
+            )
+            generatedQuestManager.saveQuestFromReport(uid, reportId, questMap)
+        }
     }
 }

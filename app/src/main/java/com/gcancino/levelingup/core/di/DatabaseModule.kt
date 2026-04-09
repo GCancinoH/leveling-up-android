@@ -20,7 +20,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "leveling_up_db"
-        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6)
+        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
             .fallbackToDestructiveMigration(false) // Added to handle schema changes during development
         .build()
     }
@@ -84,4 +84,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideWeeklyReportDao(db: AppDatabase) = db.weeklyReportDao()
+
+    @Provides
+    @Singleton
+    fun provideGeneratedQuestDao(db: AppDatabase) = db.generatedQuestDao()
 }

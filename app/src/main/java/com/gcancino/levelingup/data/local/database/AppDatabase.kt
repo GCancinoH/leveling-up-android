@@ -15,6 +15,7 @@ import com.gcancino.levelingup.data.local.database.dao.IdentityProfileDao
 import com.gcancino.levelingup.data.local.database.entities.*
 import com.gcancino.levelingup.data.local.database.entities.bodyData.*
 import com.gcancino.levelingup.data.local.database.entities.dailyTasks.*
+import com.gcancino.levelingup.data.local.database.entities.identity.*
 
 @Database(
     entities = [
@@ -39,9 +40,10 @@ import com.gcancino.levelingup.data.local.database.entities.dailyTasks.*
         PenaltyEventEntity::class,
         IdentityProfileEntity::class,
         DailyStandardEntryEntity::class,
-        WeeklyReportEntity::class
+        WeeklyReportEntity::class,
+        GeneratedQuestEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(
@@ -66,6 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun identityProfileDao(): IdentityProfileDao
     abstract fun dailyStandardEntryDao(): DailyStandardEntryDao
     abstract fun weeklyReportDao(): WeeklyReportDao
+    abstract fun generatedQuestDao(): GeneratedQuestDao
 
 
     companion object {
@@ -227,6 +230,34 @@ abstract class AppDatabase : RoomDatabase() {
                         `oneCorrection` TEXT NOT NULL,
                         `identityAlignment` TEXT NOT NULL,
                         `generatedAt` INTEGER NOT NULL,
+                        `isSynced` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `generated_quests` (
+                        `id` TEXT NOT NULL,
+                        `uID` TEXT NOT NULL,
+                        `weeklyReportId` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `targetStandardIds` TEXT NOT NULL,
+                        `goal` INTEGER NOT NULL,
+                        `durationDays` INTEGER NOT NULL,
+                        `currentProgress` INTEGER NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `startDate` INTEGER NOT NULL,
+                        `endDate` INTEGER NOT NULL,
+                        `completedAt` INTEGER,
+                        `xpReward` INTEGER NOT NULL,
                         `isSynced` INTEGER NOT NULL,
                         PRIMARY KEY(`id`)
                     )

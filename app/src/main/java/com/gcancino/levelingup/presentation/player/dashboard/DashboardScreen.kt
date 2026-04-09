@@ -23,6 +23,8 @@ import com.gcancino.levelingup.presentation.player.dashboard.components.TodaySes
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.BodyCompositionViewModel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.CalendarViewmodel
 import com.gcancino.levelingup.presentation.player.dashboard.viewModels.TasksViewModel
+import com.gcancino.levelingup.presentation.player.identity.ActiveQuestCard
+import com.gcancino.levelingup.presentation.player.identity.ActiveQuestViewModel
 import com.gcancino.levelingup.presentation.player.identity.IdentityCard
 import com.gcancino.levelingup.presentation.player.identity.IdentityViewModel
 import com.gcancino.levelingup.ui.components.DailyFlowCTACard
@@ -41,6 +43,7 @@ fun DashboardScreen(
     bodyCompositionBottomSheetViewModel: BodyCompositionViewModel = hiltViewModel(),
     notificationViewModel: NotificationsViewModel = hiltViewModel(),
     tasksViewModel: TasksViewModel = hiltViewModel(),
+    activeQuestViewModel: ActiveQuestViewModel = hiltViewModel(),
     identityViewModel: IdentityViewModel = hiltViewModel(),
     onStartSession: (LocalDate) -> Unit,
     onSetupIdentity: () -> Unit,
@@ -247,6 +250,9 @@ fun DashboardScreen(
                     onSetupIdentity = onSetupIdentity
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                ActiveQuestCard(
+                    viewModel = activeQuestViewModel
+                )
             }
         }
     }

@@ -7,7 +7,9 @@ import com.gcancino.levelingup.data.local.database.dao.BodyCompositionDao
 import com.gcancino.levelingup.data.local.database.dao.BodyMeasurementDao
 import com.gcancino.levelingup.data.local.database.dao.PlayerDao
 import com.gcancino.levelingup.data.local.datastore.DataStoreManager
+import com.gcancino.levelingup.domain.logic.DailyResetManager
 import com.gcancino.levelingup.domain.models.Player
+import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
 import com.gcancino.levelingup.domain.repositories.AuthRepository
 import com.gcancino.levelingup.domain.repositories.QuestRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -33,36 +35,33 @@ class InitViewModel @Inject constructor(
     private val compositionDao: BodyCompositionDao,
     private val measurementDao: BodyMeasurementDao,
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val dailyResetManager: DailyResetManager
 ) : ViewModel() {
 
     private val TAG = "InitViewModel"
 
-    /**
-     * Routing state
-     * needsOnboarding = true  → route to "onboarding"
-     * needsOnboarding = false → route to "dashboard"
-     */
     sealed class UserState {
         object Loading : UserState()
-        data class Ready(val player: Player, val needsOnboarding: Boolean) : UserState()
+        data class Ready(
+            val player: Player,
+            val needsOnboarding: Boolean,
+            val penalty: PenaltySummary? = null
+        ) : UserState()
         data class Error(val message: String) : UserState()
     }
+
     private val _userState = MutableStateFlow<UserState>(UserState.Loading)
     val userState: StateFlow<UserState> = _userState.asStateFlow()
 
-    init {
-        checkPlayerAuth()
-    }
+    init { checkPlayerAuth() }
 
     fun checkPlayerAuth() {
         viewModelScope.launch(Dispatchers.IO) {
             _userState.value = UserState.Loading
-            Timber.tag(TAG).d("checkPlayerAuth() started")
 
             val firebaseUser = auth.currentUser
             if (firebaseUser == null) {
-                Timber.tag(TAG).d("No authenticated user → routing to signIn")
                 _userState.value = UserState.Error("Player not found")
                 return@launch
             }
@@ -70,23 +69,22 @@ class InitViewModel @Inject constructor(
             val uid = firebaseUser.uid
 
             try {
-                // ── Run quest sync + profile checks in parallel ───────────────────
-                val questSyncDeferred    = async { runQuestSync() }
-                val profileCheckDeferred = async { checkProfileComplete(uid) }
+                coroutineScope {
+                    val questSync    = async { runQuestSync() }
+                    val profileCheck = async { checkProfileComplete(uid) }
+                    // Runs in parallel — only touches Room, no network
+                    val penaltyCheck = async { runDailyReset(uid) }
 
-                questSyncDeferred.await()
-                val needsOnboarding = profileCheckDeferred.await()
+                    questSync.await()
+                    val needsOnboarding = profileCheck.await()
+                    val penalty         = penaltyCheck.await()
 
-                Timber.tag(TAG).i(
-                    "Auth check complete → uid: $uid | " +
-                            "needsOnboarding: $needsOnboarding"
-                )
-
-                _userState.value = UserState.Ready(
-                    player          = Player(uid = uid),
-                    needsOnboarding = needsOnboarding
-                )
-
+                    _userState.value = UserState.Ready(
+                        player          = Player(uid = uid),
+                        needsOnboarding = needsOnboarding,
+                        penalty         = penalty
+                    )
+                }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "checkPlayerAuth() failed")
                 _userState.value = UserState.Error(e.message ?: "Unknown error")
@@ -94,86 +92,46 @@ class InitViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Checks whether the user has completed their profile.
-     * Uses Room as the fast local cache first.
-     * Falls back to Firestore only if Room has no data (new device install).
-     *
-     * Returns true if onboarding is needed (any condition missing).
-     */
-    private suspend fun checkProfileComplete(uid: String): Boolean {
-        Timber.tag(TAG).d("Checking profile completeness for uid: $uid")
-
-        // Check 1: Player record exists locally
-        val hasPlayer = playerDao.getPlayer(uid) != null
-        Timber.tag(TAG).d("hasPlayer (Room): $hasPlayer")
-
-        // Check 2: Initial body composition exists locally
-        val hasComposition = compositionDao.countInitialData(uid) > 0
-        Timber.tag(TAG).d("hasInitialComposition (Room): $hasComposition")
-
-        // Check 3: Initial body measurements exist locally
-        val hasMeasurements = measurementDao.countInitialData(uid) > 0
-        Timber.tag(TAG).d("hasInitialMeasurements (Room): $hasMeasurements")
-
-        // Fast path — all data in Room → no Firestore calls needed
-        if (hasPlayer && hasComposition && hasMeasurements) {
-            Timber.tag(TAG).i("✔ Profile complete (from Room cache)")
-            return false
+    private suspend fun runDailyReset(uid: String): PenaltySummary? {
+        return try {
+            dailyResetManager.evaluateAndApply(uid)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w("DailyReset failed (non-fatal): ${e.message}")
+            null
         }
+    }
 
-        // Slow path — Room is empty (new device) → check Firestore
-        Timber.tag(TAG).d("Room cache miss → checking Firestore")
+    private suspend fun checkProfileComplete(uid: String): Boolean {
+        val hasPlayer = playerDao.getPlayer(uid) != null
+        val hasComposition = compositionDao.countInitialData(uid) > 0
+        val hasMeasurements = measurementDao.countInitialData(uid) > 0
+        if (hasPlayer && hasComposition && hasMeasurements) return false
         return checkProfileCompleteFromFirestore(uid)
     }
 
     private suspend fun checkProfileCompleteFromFirestore(uid: String): Boolean = coroutineScope {
-        val playerCheck = async {
-            firestore.collection("players")
-                .document(uid)
-                .get().await()
-                .exists()
-        }
-        val compositionCheck = async {
+        val p = async { firestore.collection("players").document(uid).get().await().exists() }
+        val c = async {
             !firestore.collection("body_composition")
-                .whereEqualTo("uID", uid)
-                .whereEqualTo("initialData", true)
-                .limit(1)
-                .get().await()
-                .isEmpty
+                .whereEqualTo("uID", uid).whereEqualTo("initialData", true)
+                .limit(1).get().await().isEmpty
         }
-        val measurementsCheck = async {
+        val m = async {
             !firestore.collection("player_measurements")
-                .whereEqualTo("uID", uid)
-                .whereEqualTo("initialData", true)
-                .limit(1)
-                .get().await()
-                .isEmpty
+                .whereEqualTo("uID", uid).whereEqualTo("initialData", true)
+                .limit(1).get().await().isEmpty
         }
-
-        val hasPlayer      = playerCheck.await()
-        val hasComposition = compositionCheck.await()
-        val hasMeasurements = measurementsCheck.await()
-
-        Timber.tag(TAG).d(
-            "Firestore check → player: $hasPlayer | composition: $hasComposition | measurements: $hasMeasurements"
-        )
-
-        !(hasPlayer && hasComposition && hasMeasurements)
+        !(p.await() && c.await() && m.await())
     }
 
     private suspend fun runQuestSync() {
         try {
-            val needsRefresh = dataStoreManager.needsQuestRefresh()
-            if (needsRefresh) {
-                val syncResult = questRepository.syncQuestsFromFirestore()
-                if (syncResult is Resource.Success) {
-                    dataStoreManager.updateQuestLoadedStatus()
-                }
+            if (dataStoreManager.needsQuestRefresh()) {
+                val result = questRepository.syncQuestsFromFirestore()
+                if (result is Resource.Success) dataStoreManager.updateQuestLoadedStatus()
             }
         } catch (e: Exception) {
             Timber.tag(TAG).w("Quest sync failed (non-fatal): ${e.message}")
-            // Non-fatal — don't block routing if quest sync fails
         }
     }
 }

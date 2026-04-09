@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Leveling Up</string>
+    <string name="app_name">Ascent</string>
 
     /*
      * Question Bank
@@ -60,7 +60,7 @@
     <string name="identity_title">Your Identity</string>
     <string name="identity_subtitle">Define who you are, not what you do.</string>
     <string name="identity_prefix">I am </string>
-    <string name="identity_placeholder">a disciplined athlete</string>
+    <string name="identity_placeholder">" a disciplined athlete"</string>
     <string name="identity_daily_intro">This person, every day:</string>
     <string name="identity_daily_standards_header">MY DAILY STANDARDS</string>
     <string name="identity_train_label">Train</string>

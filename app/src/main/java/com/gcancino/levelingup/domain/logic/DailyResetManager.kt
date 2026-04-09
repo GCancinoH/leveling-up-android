@@ -40,6 +40,7 @@ class DailyResetManager @Inject constructor(
     private val dailyTaskDao: DailyTaskDao,
     private val standardEntryDao: DailyStandardEntryDao,
     private val penaltyEventDao: PenaltyEventDao,
+    private val generatedQuestManager: GeneratedQuestManager,
     private val prefs: SharedPreferences  // "penalty_prefs" — injected via Hilt
 ) {
 
@@ -118,6 +119,8 @@ class DailyResetManager @Inject constructor(
      */
     private suspend fun evaluateDay(uID: String, date: LocalDate): PenaltySummary? {
         val (start, end) = timeProvider.dayBoundaries(date)
+        
+        generatedQuestManager.evaluateProgress(uID)
 
         // ── Check identity standards (new system) ─────────────────────────────
         val incompleteStandards = standardEntryDao.getIncompleteForDay(uID, start, end)
