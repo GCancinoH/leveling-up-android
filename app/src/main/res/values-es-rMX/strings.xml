@@ -1,0 +1,95 @@
+<resources>
+    <string name="app_name">Ascenso</string>
+
+    /*
+     * Question Bank
+    */
+
+    // Morning Anchors and Rotations
+    <string name="qb_morningAnchor_1">¿Quién decido ser hoy?</string>
+    <string name="qb_morningAnchor_1_hint">Nómbralo claramente: tu cerebro actúa en función de la identidad que ensaya.</string>
+    <string name="qb_morningAnchor_2">¿Qué es lo que no toleraré de mí mismo hoy?</string>
+    <string name="qb_morningAnchor_2_hint">Inhibición proactiva: identifica el comportamiento antes de que se manifieste.</string>
+    <string name="qb_morningAnchor_3">¿Cuál es mi única prioridad innegociable hoy?</string>
+    <string name="qb_morningAnchor_3_hint">Una cosa. Si todo lo demás se quema, esto se hará.</string>
+    <string name="qb_morningRotating_1">¿A cuál de tus roles debes prestarle más atención hoy y cómo se vería eso?</string>
+    <string name="qb_morningRotating_2">¿Qué miedo o resistencia podría surgir hoy y cómo respondería la persona en la que te estás convirtiendo?</string>
+    <string name="qb_morningRotating_3">¿Qué haría la persona que intentas ser durante la primera hora de hoy?</string>
+    <string name="qb_morningRotating_4">¿Qué historia sobre ti mismo estás listo para dejar de confirmar hoy?</string>
+    <string name="qb_morningRotating_5">Si tu "yo del futuro" pudiera ver el día de hoy, ¿de qué se sentiría orgulloso?</string>
+    <string name="qb_morningRotating_6">¿Qué estándar sueles bajar cuando nadie te ve? ¿Lo mantendrás hoy?</string>
+    <string name="qb_morningRotating_7">¿Qué necesita tu cuerpo de ti hoy para rendir como esperas?</string>
+    <string name="qb_morningRotating_8">¿Cuál es la brecha entre quién dices ser y cómo te comportaste ayer? ¿Cómo la cerrarás hoy?</string>
+    <string name="qb_morningRotating_9">¿A qué parte de tu identidad le has estado dedicando menos tiempo últimamente?</string>
+    <string name="qb_morningRotating_10">¿Qué decisión de hoy, si se toma con total integridad, cambiaría el rumbo de tu semana?</string>
+    <string name="qb_morningRotating_11">¿Qué creencia limitante intenta tomar el control hoy y qué verdad la reemplaza?</string>
+    <string name="qb_morningRotating_12">¿Cómo estarás presente hoy para las personas en tu vida de forma coherente con la persona en la que te conviertes?</string>
+    <string name="qb_morningRotating_13">¿Qué cosas estás tolerando que alguien con tu identidad no permitiría?</string>
+    <string name="qb_morningRotating_14">¿Cómo se ve la disciplina para ti hoy? Específicamente, no de forma general.</string>
+    <string name="qb_morningRotating_15">¿Qué tendrías que creer sobre ti mismo para que hoy sea un día excelente?</string>
+
+    // Evening Anchors and Rotations
+    <string name="qb_eveningAnchor_1">¿Actué hoy como la persona que dije que sería?</string>
+    <string name="qb_eveningAnchor_hint_1">Auditoría de identidad directa: sea honesto, no duro.</string>
+    <string name="qb_eveningAnchor_2">¿En qué me quedé corto hoy y cuál fue la verdadera razón?</string>
+    <string name="qb_eveningAnchor_hint_2">Replantea el fracaso como un dato. La verdadera razón rara vez es la que parece.</string>
+    <string name="qb_eveningAnchor_3">¿Cuál es la corrección principal que me llevo para mañana?</string>
+    <string name="qb_eveningAnchor_hint_3">Intención de implementación: lo específico siempre es mejor que lo vago.</string>
+    <string name="qb_eveningRotating_1">¿En cuál de tus roles estuviste plenamente presente hoy y en cuál diste una versión inferior de ti?</string>
+    <string name="qb_eveningRotating_2">¿Qué patrón de pensamiento se repitió hoy? ¿Es el patrón de la persona en la que te estás convirtiendo?</string>
+    <string name="qb_eveningRotating_3">¿En qué momento tomaste una decisión basada en quién solías ser en lugar de quién eliges ser hoy?</string>
+    <string name="qb_eveningRotating_4">¿A qué le dijiste que sí hoy que alguien con tu identidad habría dicho que no?</string>
+    <string name="qb_eveningRotating_5">¿Qué situación incómoda evitaste hoy y qué precio pagas por esa evasión?</string>
+    <string name="qb_eveningRotating_6">¿En qué momento actuaste por miedo en lugar de hacerlo desde tu identidad declarada?</string>
+    <string name="qb_eveningRotating_7">¿Qué te dijo tu cuerpo hoy que tu ego decidió ignorar?</string>
+    <string name="qb_eveningRotating_8">Si volvieras a ver el día de hoy como un observador externo, ¿qué te dirías que hicieras diferente?</string>
+    <string name="qb_eveningRotating_9">¿Qué hábito confirmó o debilitó tu identidad el día de hoy?</string>
+    <string name="qb_eveningRotating_10">¿A quién influenciaste hoy? ¿Fue esa influencia coherente con quien dices ser?</string>
+    <string name="qb_eveningRotating_11">¿Qué estabas fingiendo no saber sobre ti mismo hoy?</string>
+    <string name="qb_eveningRotating_12">¿Qué estándar mantuviste incluso cuando fue difícil? ¿Qué dice eso de ti?</string>
+    <string name="qb_eveningRotating_13">¿En qué momento te hiciste pequeño cuando pudiste haber asumido plenamente tu identidad?</string>
+    <string name="qb_eveningRotating_14">¿Qué aprendiste sobre ti hoy que te gustaría recordar dentro de un año?</string>
+    <string name="qb_eveningRotating_15">¿Qué asunto emocional o mental quedó inconcluso y te persigue hasta mañana?</string>
+    <string name="qb_eveningRotating_16">¿Cómo afectaron tus niveles de energía tu capacidad de vivir conforme a tu identidad hoy?</string>
+    <string name="qb_eveningRotating_17">¿Qué conversación tuviste (o evitaste) que tu identidad te exigía tener?</string>
+    <string name="qb_eveningRotating_18">¿Qué patrón estás finalmente listo para interrumpir y qué lo reemplazará?</string>
+    <string name="qb_eveningRotating_19">¿En qué momento del día te sentiste más como la persona que intentas llegar a ser?</string>
+    <string name="qb_eveningRotating_20">Si hoy fuera un capítulo en la historia de quién llegaste a ser, ¿qué título tendría?</string>
+
+    <!-- Identity Setup -->
+    <string name="identity_title">Tu Identidad</string>
+    <string name="identity_subtitle">Define quién eres, no qué haces.</string>
+    <string name="identity_prefix">Soy </string>
+    <string name="identity_placeholder">" un atleta disciplinado"</string>
+    <string name="identity_daily_intro">Esta persona, cada día:</string>
+    <string name="identity_daily_standards_header">MIS ESTÁNDARES DIARIOS</string>
+    <string name="identity_train_label">Entrenar</string>
+    <string name="identity_train_hint">Auto-validado con tus sesiones</string>
+    <string name="identity_add_standard">Añadir estándar</string>
+    <string name="identity_info_note">💡 Los estándares tipo Entrenar se validan automáticamente cuando completas una sesión. El resto los marcas tú mismo.</string>
+    <string name="identity_xp_per_day">+%d XP/día</string>
+
+    <!-- Identity Roles -->
+    <string name="identity_my_roles">MIS ROLES</string>
+    <string name="identity_add_role">Añadir rol</string>
+    <string name="identity_new_role">Nuevo Rol</string>
+    <string name="identity_role_name_label">Nombre del rol</string>
+    <string name="identity_role_name_placeholder">Atleta, Trader, Lector…</string>
+    <string name="identity_no_roles_hint">Añade roles para organizar tus estándares</string>
+
+    <!-- Add Standard Sheet -->
+    <string name="identity_new_standard">Nuevo Estándar</string>
+    <string name="identity_standard_question">¿Qué hace esta persona cada día?</string>
+    <string name="identity_standard_type">Tipo</string>
+    <string name="identity_standard_role">Rol</string>
+    <string name="identity_standard_xp_hint">+%d XP por día al cumplirlo</string>
+    <string name="identity_add_standard_button">Añadir Estándar</string>
+    <string name="identity_select_role">Selecciona un rol</string>
+
+    <!-- Navigation -->
+    <string name="nav_back">Atrás</string>
+    <string name="nav_skip">Omitir</string>
+    <string name="nav_next">Siguiente</string>
+    <string name="qb_mirrorMode">Modo espejo: Si la persona en la que quieres convertirte pudiera ver tu versión actual, ¿qué diría?</string>
+
+</resources>
