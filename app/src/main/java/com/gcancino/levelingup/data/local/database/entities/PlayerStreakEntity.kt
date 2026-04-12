@@ -7,9 +7,10 @@ import androidx.room.PrimaryKey
 data class PlayerStreakEntity(
     @PrimaryKey(autoGenerate = false) val id: Long = 0L,
     val uid: String = "",
-    val currentStreak: Int? = null,
-    val longestStreak: Int? = null,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
     val lastStreakUpdate: Long? = null,
-    val needSync: Boolean? = false,
+    val protectedDays: Int = 0,
+    val needSync: Boolean = false,
     val lastSync: Long? = null
 )

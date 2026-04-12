@@ -238,57 +238,101 @@ class PlayerRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncUnsynced(): Resource<Unit> {
-        val user = auth.currentUser ?: return Resource.Error("User not logged in")
-        val uid = user.uid
-
         return try {
-            var hasUpdates = false
-            val batchWrite = db.batch()
+            val uid = auth.currentUser?.uid
+                ?: return Resource.Error("No authenticated user")
 
-            val localPlayer = withContext(Dispatchers.IO) { localDB.playerDao().getPlayer(uid) }
-            val localAttributes = withContext(Dispatchers.IO) { localDB.playerAttributesDao().getPlayerAttributes(uid) }
-            val localProgress = withContext(Dispatchers.IO) { localDB.playerProgressDao().getPlayerProgress(uid) }
-            val localStreak = withContext(Dispatchers.IO) { localDB.playerStreakDao().getPlayerStreak(uid) }
+            val now = System.currentTimeMillis()
 
-            if (localPlayer?.needsSync == true) {
-                batchWrite.set(db.collection("players").document(uid), localPlayer.toDomain())
-                hasUpdates = true
-            }
-            if (localAttributes?.needSync == true) {
-                batchWrite.set(db.collection("player_attributes").document(uid), localAttributes.toDomain())
-                hasUpdates = true
-            }
-            if (localProgress?.needSync == true) {
-                batchWrite.set(db.collection("player_progress").document(uid), localProgress.toDomain())
-                hasUpdates = true
-            }
-            if (localStreak?.needSync == true) {
-                batchWrite.set(db.collection("player_streaks").document(uid), localStreak.toDomain())
-                hasUpdates = true
+            // Recoger todos los que tienen needSync = true
+            val unsyncedProgress = localDB.playerProgressDao().getUnsynced()
+            val unsyncedStreaks = localDB.playerStreakDao().getUnsynced()
+            val unsyncedAttributes = localDB.playerAttributesDao().getUnsynced()
+            val unsyncedPlayers = localDB.playerDao().getUnsynced(uid)
+
+            if (unsyncedProgress.isEmpty() && unsyncedStreaks.isEmpty() &&
+                unsyncedAttributes.isEmpty() && unsyncedPlayers.isEmpty()) {
+                Timber.tag("PlayerRepository").d("Player sync — nothing to sync")
+                return Resource.Success(Unit)
             }
 
-            if (hasUpdates) {
-                batchWrite.commit().await()
-                val now = Date()
-                val nowTime = now.time
-                withContext(Dispatchers.IO) {
-                    localDB.withTransaction {
-                        if (localPlayer?.needsSync == true) localDB.playerDao().markAsSynced(uid, now)
-                        if (localAttributes?.needSync == true) localDB.playerAttributesDao().updateSyncStatus(uid, false, nowTime)
-                        if (localProgress?.needSync == true) localDB.playerProgressDao().updateSyncStatus(uid, false, nowTime)
-                        if (localStreak?.needSync == true) {
-                            localDB.playerStreakDao().updatePlayerStreak(localStreak.copy(needSync = false, lastSync = nowTime))
-                        }
-                    }
-                }
-                Timber.tag("PlayerRepository").i("✔ Nightly sync for PlayerData committed")
-            } else {
-                Timber.tag("PlayerRepository").i("No PlayerData to sync")
+            val batch = db.batch()
+
+            unsyncedProgress.forEach { p ->
+                batch.set(
+                    db.collection("player_progress").document(p.uid),
+                    mapOf(
+                        "uid" to p.uid,
+                        "exp" to p.exp,
+                        "level" to p.level,
+                        "coins" to p.coins,
+                        "availablePoints" to p.availablePoints,
+                        "currentCategory" to p.currentCategory
+                    )
+                )
             }
-            
+
+            unsyncedStreaks.forEach { s ->
+                batch.set(
+                    db.collection("player_streaks").document(s.uid),
+                    mapOf(
+                        "uid" to s.uid,
+                        "currentStreak" to s.currentStreak,
+                        "longestStreak" to s.longestStreak,
+                        "lastStreakUpdate" to s.lastStreakUpdate,
+                        "protectedDays" to s.protectedDays
+                    )
+                )
+            }
+
+            unsyncedAttributes.forEach { a ->
+                batch.set(
+                    db.collection("player_attributes").document(uid),
+                    mapOf(
+                        "uid"          to a.uid,
+                        "strength"     to a.strength,
+                        "endurance"    to a.endurance,
+                        "intelligence" to a.intelligence,
+                        "mobility"     to a.mobility,
+                        "health"       to a.health,
+                        "finance"      to a.finance
+                    )
+                )
+            }
+
+            unsyncedPlayers.forEach { p ->
+                batch.set(
+                    db.collection("players").document(uid),
+                    mapOf(
+                        "uid"         to p.uid,
+                        "displayName" to p.displayName,
+                        "gender"      to p.gender,
+                        "birthDate"   to p.birthDate,
+                        "height"      to p.height
+                    )
+                )
+            }
+
+            batch.commit().await()
+
+            // Marcar como sincronizados
+            if (unsyncedProgress.isNotEmpty())
+                localDB.playerProgressDao().markAsSynced(unsyncedProgress.map { it.uid }, now)
+            if (unsyncedStreaks.isNotEmpty())
+                localDB.playerStreakDao().markAsSynced(unsyncedStreaks.map { it.uid }, now)
+            if (unsyncedAttributes.isNotEmpty())
+                localDB.playerAttributesDao().markAsSynced(unsyncedAttributes.map { it.uid }, now)
+            if (unsyncedPlayers.isNotEmpty())
+                localDB.playerDao().markAsSynced(uid, now)
+
+            Timber.tag("PlayerRepository").i(
+                "✔ Player sync → progress: ${unsyncedProgress.size} | " +
+                        "streaks: ${unsyncedStreaks.size} | attrs: ${unsyncedAttributes.size}"
+            )
             Resource.Success(Unit)
         } catch (e: Exception) {
-            Resource.Error("syncUnsynced failed: ${e.message}")
+            Timber.tag("PlayerRepository").e(e, "syncUnsynced() failed")
+            Resource.Error(e.message ?: "Player sync failed")
         }
     }
 

@@ -5,11 +5,11 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.gcancino.levelingup.core.Resource
-import com.gcancino.levelingup.data.repositories.DailyTasksRepositoryImpl
 import com.gcancino.levelingup.domain.logic.DailyResetManager
 import com.gcancino.levelingup.domain.repositories.BodyDataRepository
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.IdentityRepository
+import com.gcancino.levelingup.domain.repositories.NutritionRepository
 import com.gcancino.levelingup.domain.repositories.PlayerRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.assisted.Assisted
@@ -32,8 +32,9 @@ class NightlySyncWorker @AssistedInject constructor(
     private val bodyDataRepository: BodyDataRepository,
     private val dailyTasksRepository: DailyTasksRepository,
     private val identityRepository: IdentityRepository,
+    private val nutritionRepository: NutritionRepository,
     private val playerRepository: PlayerRepository,
-    private val dailyResetManager: DailyResetManager  // safety net
+    private val dailyResetManager: DailyResetManager
 ) : CoroutineWorker(context, params) {
 
     private val TAG = "NightlySyncWorker"
@@ -48,20 +49,19 @@ class NightlySyncWorker @AssistedInject constructor(
 
         return try {
             coroutineScope {
-                // 1. Apply any pending penalties (safety net — idempotent)
                 val resetJob = async {
                     try { dailyResetManager.evaluateAndApply(uid) }
                     catch (e: Exception) { Timber.tag(TAG).w("Reset failed: ${e.message}") }
                 }
 
-                // 2. Sync everything to Firestore in parallel
-                val bodySync     = async { bodyDataRepository.syncUnsynced() }
-                val dailySync    = async { dailyTasksRepository.syncUnsynced() }
-                val identitySync = async { identityRepository.syncUnsynced() }
-                val playerSync   = async { playerRepository.syncUnsynced() }
+                val bodySync      = async { bodyDataRepository.syncUnsynced() }
+                val dailySync     = async { dailyTasksRepository.syncUnsynced() }
+                val identitySync  = async { identityRepository.syncUnsynced() }
+                val nutritionSync = async { nutritionRepository.syncUnsynced() }
+                val playerSync    = async { playerRepository.syncUnsynced() }  // ← NUEVO
 
                 resetJob.await()
-                val results: List<Resource<*>> = awaitAll(bodySync, dailySync, identitySync, playerSync)
+                val results = awaitAll(bodySync, dailySync, identitySync, nutritionSync, playerSync)
 
                 val error = results.filterIsInstance<Resource.Error<*>>().firstOrNull()
                 if (error != null) {

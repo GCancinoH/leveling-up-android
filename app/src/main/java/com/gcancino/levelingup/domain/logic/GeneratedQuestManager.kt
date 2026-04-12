@@ -224,6 +224,69 @@ class GeneratedQuestManager @Inject constructor(
         }
     }
 
+    suspend fun createPunishmentQuest(uID: String, failedDays: Int) {
+        try {
+            val existing = questDao.getActive(uID)
+            if (existing != null) {
+                Timber.tag(TAG).d("Quest de castigo solicitada pero ya hay una activa — skipping")
+                return
+            }
+
+            val today = timeProvider.today()
+            val periodStart = today.minusDays(failedDays.toLong())
+            val (startMs, _) = timeProvider.dayBoundaries(periodStart)
+            val (_, endMs) = timeProvider.dayBoundaries(today.minusDays(1))
+            val recentEntries = standardEntryDao.getForDay(uID, startMs, endMs)
+            val failedStandardIds = recentEntries
+                .filter { !it.isCompleted }
+                .groupBy { it.standardId }
+                .entries
+                .sortedByDescending { it.value.size }
+                .take(2)
+                .map { it.key }
+
+            if (failedStandardIds.isEmpty()) {
+                Timber.tag(TAG).w("createPunishmentQuest: no hay estándares fallados recientes")
+                return
+            }
+
+            val failedTitles = recentEntries
+                .filter { it.standardId in failedStandardIds }
+                .distinctBy { it.standardId }
+                .joinToString(", ") { it.standardTitle }
+
+            val startDate = Date()
+            val endDate = Date(startDate.time + 5 * 24 * 60 * 60 * 1000L)
+
+            questDao.insert(
+                GeneratedQuestEntity(
+                    id = UUID.randomUUID().toString(),
+                    uID = uID,
+                    weeklyReportId = "punishment_${System.currentTimeMillis()}",
+                    title = "Recuperación de identidad",
+                    description = "Fallaste $failedDays días seguidos en: $failedTitles. Completa estos estándares 5 días consecutivos para recuperar tu racha.",
+                    type = GeneratedQuestType.STREAK.name,
+                    targetStandardIds = gson.toJson(failedStandardIds),
+                    goal = 5,
+                    durationDays = 5,
+                    currentProgress = 0,
+                    status = GeneratedQuestStatus.ACTIVE.name,
+                    startDate = startDate,
+                    endDate = endDate,
+                    xpReward = 200,
+                    isSynced = false
+                )
+            )
+
+            Timber.tag(TAG).i(
+                "⚠️ Quest de castigo creada → '$failedTitles' | " +
+                        "$failedDays días fallados | 5 días STREAK | +200 XP"
+            )
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "createPunishmentQuest() falló")
+        }
+    }
+
     private suspend fun awardQuestXP(uID: String, xp: Int) {
         val progress = playerProgressDao.getPlayerProgress(uID) ?: return
         val newXP    = (progress.exp ?: 0) + xp

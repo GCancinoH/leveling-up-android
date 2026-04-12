@@ -22,10 +22,13 @@ interface PlayerAttributesDao {
     @Query("SELECT * FROM player_attributes WHERE uid = :uid LIMIT 1")
     suspend fun getPlayerAttributes(uid: String): PlayerAttributesEntity?
 
-    @Query("SELECT needSync FROM player_attributes WHERE needSync=1 AND uid = :uid LIMIT 1")
-    suspend fun getSyncStatus(uid: String): Boolean?
-
     @Query("UPDATE player_attributes SET needSync = :needSync, lastSync = :lastSync WHERE uid = :uid")
     suspend fun updateSyncStatus(uid: String, needSync: Boolean, lastSync: Long): Int
+
+    @Query("SELECT * FROM player_attributes WHERE needSync = 1")
+    suspend fun getUnsynced(): List<PlayerAttributesEntity>
+
+    @Query("UPDATE player_attributes SET needSync = 0, lastSync = :now WHERE uid IN (:uids)")
+    suspend fun markAsSynced(uids: List<String>, now: Long)
 
 }

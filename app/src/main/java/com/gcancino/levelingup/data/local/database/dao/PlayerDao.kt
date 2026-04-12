@@ -40,5 +40,8 @@ interface PlayerDao {
     suspend fun markForSync(uid: String)
 
     @Query("UPDATE player SET needs_sync = 0, last_sync = :lastSync WHERE uid = :uid")
-    suspend fun markAsSynced(uid: String, lastSync: Date)
+    suspend fun markAsSynced(uid: String, lastSync: Long)
+
+    @Query("SELECT * FROM player WHERE needs_sync = 1 AND uid = :uid")
+    suspend fun getUnsynced(uid: String): List<PlayerEntity>
 }

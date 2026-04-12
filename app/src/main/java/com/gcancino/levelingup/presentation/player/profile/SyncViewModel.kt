@@ -7,6 +7,8 @@ import com.gcancino.levelingup.core.SyncState
 import com.gcancino.levelingup.domain.repositories.BodyDataRepository
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.IdentityRepository
+import com.gcancino.levelingup.domain.repositories.NutritionRepository
+import com.gcancino.levelingup.domain.repositories.PlayerRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,8 @@ class SyncViewModel @Inject constructor(
     private val bodyDataRepository: BodyDataRepository,
     private val dailyTasksRepository: DailyTasksRepository,
     private val identityRepository: IdentityRepository,
+    private val nutritionRepository: NutritionRepository,
+    private val playerRepository: PlayerRepository,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
@@ -35,11 +39,12 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _syncState.value = SyncState.Syncing
 
-            // Corre todos en paralelo
             val results = listOf(
                 async { bodyDataRepository.syncUnsynced() },
                 async { dailyTasksRepository.syncUnsynced() },
-                async { identityRepository.syncUnsynced() }
+                async { identityRepository.syncUnsynced() },
+                async { nutritionRepository.syncUnsynced() },
+                async { playerRepository.syncUnsynced() }   // ← AÑADIR
             ).awaitAll()
 
             val error = results.filterIsInstance<Resource.Error<*>>().firstOrNull()
@@ -49,7 +54,6 @@ class SyncViewModel @Inject constructor(
                 SyncState.Success
             }
 
-            // Reset a Idle después de 3 segundos
             if (_syncState.value is SyncState.Success) {
                 delay(3000)
                 _syncState.value = SyncState.Idle
