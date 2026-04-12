@@ -47,9 +47,9 @@ fun OnboardingScreen(
     onDismiss: () -> Unit
 ) {
     val currentStep by viewModel.currentStep.collectAsState()
-    val progress    by viewModel.progress.collectAsState()
-    val saveState   by viewModel.saveState.collectAsState()
-    val data        by viewModel.data.collectAsState()
+    val progress by viewModel.progress.collectAsState()
+    val saveState by viewModel.saveState.collectAsState()
+    val data by viewModel.data.collectAsState()
 
     val animatedProgress by animateFloatAsState(
         targetValue  = progress,
@@ -113,6 +113,7 @@ fun OnboardingScreen(
                             initialName     = data.displayName,
                             initialBirthDate = data.birthDate,
                             initialGender   = data.gender,
+                            initialAge      = data.age,
                             onNext          = { name, birthDate, gender ->
                                 viewModel.updatePersonalInfo(name, birthDate, gender)
                                 viewModel.nextStep()

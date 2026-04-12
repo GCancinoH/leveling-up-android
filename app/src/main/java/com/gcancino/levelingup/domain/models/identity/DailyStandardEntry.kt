@@ -12,9 +12,10 @@ data class DailyStandardEntry(
     val standardTitle: String = "",
     val standardType: StandardType = StandardType.CUSTOM,
     val roleId: String = "",
-    val roleName: String  = "",
+    val roleName: String = "",
     val date: @Serializable(with = DateSerializer::class) Date = Date(),
-    val isCompleted: Boolean = false,
+    val isCompleted: Boolean  = false,
+    val isFailed: Boolean     = false,    // ← NUEVO
     val completedAt: @Serializable(with = DateSerializer::class) Date? = null,
     val xpAwarded: Int = 0,
     val autoValidated: Boolean = false,

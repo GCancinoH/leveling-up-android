@@ -19,3 +19,16 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Keep classes used via reflection (e.g., Gson data models)
+-keepclassmembers class com.example.myapp.model.** {
+    <fields>;
+}
+
+# Keep JNI-called methods
+-keepclasseswithmembers class * {
+    native <methods>;
+}
+
+# Aggressive optimization
+-repackageclasses
+-allowaccessmodification

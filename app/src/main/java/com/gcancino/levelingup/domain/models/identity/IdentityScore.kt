@@ -1,5 +1,7 @@
 package com.gcancino.levelingup.domain.models.identity
 
+import com.gcancino.levelingup.R
+
 data class RoleScore(
     val roleId: String,
     val roleName: String,
@@ -24,7 +26,7 @@ data class IdentityScore(
             completedStandards = 0,
             totalStandards = 0,
             byRole = emptyMap(),
-            label = "Sin estándares",
+            label = R.string.identity_score_empty.toString(),
             color = IdentityScoreColor.NEUTRAL
         )
 
@@ -34,32 +36,40 @@ data class IdentityScore(
         ): IdentityScore {
             if (entries.isEmpty()) return EMPTY
 
-            // Score global
             val total     = entries.size
             val completed = entries.count { it.isCompleted }
-            val overall   = completed.toFloat() / total.toFloat()
+            val failed    = entries.count { it.isFailed }  // ← NUEVO: fallos activos
 
-            // Score por rol — calculado desde las entradas de-normalizadas
+            // isFailed pesa más que simplemente no completar:
+            // un fallo activo resta 1.5x en el score
+            val effectiveCompleted = completed.toFloat() - (failed * 0.5f)
+            val overall = (effectiveCompleted / total.toFloat()).coerceIn(0f, 1f)
+
             val byRole = roles.associate { role ->
-                val roleEntries    = entries.filter { it.roleId == role.id }
-                val roleCompleted  = roleEntries.count { it.isCompleted }
-                val roleTotal      = roleEntries.size
+                val roleEntries   = entries.filter { it.roleId == role.id }
+                val roleCompleted = roleEntries.count { it.isCompleted }
+                val roleFailed    = roleEntries.count { it.isFailed }
+                val roleTotal     = roleEntries.size
+                val roleScore     = if (roleTotal > 0)
+                    ((roleCompleted - roleFailed * 0.5f) / roleTotal).coerceIn(0f, 1f)
+                else 0f
+
                 role.id to RoleScore(
                     roleId     = role.id,
                     roleName   = role.name,
                     roleColor  = role.color,
-                    percentage = if (roleTotal > 0) roleCompleted.toFloat() / roleTotal else 0f,
+                    percentage = roleScore,
                     completed  = roleCompleted,
                     total      = roleTotal
                 )
             }
 
             val (label, color) = when {
-                overall >= 1.0f -> "Identidad cumplida 🔥"  to IdentityScoreColor.PERFECT
-                overall >= 0.8f -> "Casi perfecto"           to IdentityScoreColor.HIGH
-                overall >= 0.5f -> "Parcialmente alineado"   to IdentityScoreColor.MEDIUM
-                overall > 0f    -> "Debajo de tu estándar"   to IdentityScoreColor.LOW
-                else            -> "Sin progreso hoy"        to IdentityScoreColor.NONE
+                overall >= 1.0f -> R.string.identity_score_lbl_perfect.toString() to IdentityScoreColor.PERFECT
+                overall >= 0.8f -> R.string.identity_score_lbl_high.toString() to IdentityScoreColor.HIGH
+                overall >= 0.5f -> R.string.identity_score_lbl_medium.toString() to IdentityScoreColor.MEDIUM
+                overall > 0f    -> R.string.identity_score_lbl_low.toString() to IdentityScoreColor.LOW
+                else -> R.string.identity_score_lbl_none.toString() to IdentityScoreColor.NONE
             }
 
             return IdentityScore(

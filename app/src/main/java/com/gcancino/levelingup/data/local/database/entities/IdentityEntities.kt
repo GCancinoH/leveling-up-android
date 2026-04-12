@@ -33,6 +33,7 @@ data class DailyStandardEntryEntity(
     val roleName: String,
     val date: Date,
     val isCompleted: Boolean = false,
+    val isFailed: Boolean = false,
     val completedAt: Date? = null,
     val xpAwarded: Int = 0,
     val autoValidated: Boolean = false,

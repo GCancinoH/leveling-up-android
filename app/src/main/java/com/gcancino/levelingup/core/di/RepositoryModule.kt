@@ -49,5 +49,9 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindNutritionRepository(impl: NutritionRepositoryImpl): NutritionRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTimeProvider(impl: RealTimeProvider): TimeProvider
 }

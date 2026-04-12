@@ -19,9 +19,8 @@ object DatabaseModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "leveling_up_db"
-        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
-            .fallbackToDestructiveMigration(false) // Added to handle schema changes during development
+            "ascenso_db"
+        ).addMigrations()
         .build()
     }
 
@@ -88,4 +87,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideGeneratedQuestDao(db: AppDatabase) = db.generatedQuestDao()
+
+    @Provides
+    @Singleton
+    fun provideNutritionEntryDao(db: AppDatabase) = db.nutritionEntryDao()
 }

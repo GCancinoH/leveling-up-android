@@ -11,4 +11,5 @@ interface PlayerRepository {
     suspend fun savePlayerData(playerData: PlayerData): Resource<Unit>
     fun getCurrentPlayer(): Flow<Resource<Player?>>
     suspend fun awardXP(uid: String, xp: Int): Resource<Int>
+    suspend fun syncUnsynced(): Resource<Unit>
 }

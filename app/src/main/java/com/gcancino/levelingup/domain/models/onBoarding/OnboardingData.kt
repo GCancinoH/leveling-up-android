@@ -11,6 +11,7 @@ data class OnboardingData(
     val displayName: String = "",
     val birthDate: Date? = null,
     val gender: Genders? = null,
+    val age: Int = 0,
 
     // Physical + Composition (merged step)
     val height: Double = 0.0,

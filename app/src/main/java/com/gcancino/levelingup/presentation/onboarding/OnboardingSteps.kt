@@ -67,6 +67,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -109,6 +110,7 @@ import java.util.Locale
 import java.util.UUID
 import kotlin.system.exitProcess
 import androidx.core.graphics.toColorInt
+import com.gcancino.levelingup.domain.logic.DateUtils
 
 /**
  * Step 0: Welcome
@@ -157,17 +159,25 @@ fun OnboardingWelcomeStep(onNext: () -> Unit) {
 fun OnboardingPersonalInfoStep(
     initialName: String,
     initialBirthDate: Date?,
+    initialAge: Int?,
     initialGender: Genders?,
     onNext: (name: String, birthDate: Date?, gender: Genders?) -> Unit,
     onBack: () -> Unit,
     onDismiss: () -> Unit = {}
 ) {
-    var name      by remember { mutableStateOf(initialName) }
+    var name by remember { mutableStateOf(initialName) }
     var birthDate by remember { mutableStateOf(initialBirthDate) }
-    var gender    by remember { mutableStateOf(initialGender) }
+    var gender by remember { mutableStateOf(initialGender) }
+
     var showDatePicker by remember { mutableStateOf(false) }
 
     val isValid = name.isNotBlank() && birthDate != null && gender != null
+
+    val age by remember {
+        derivedStateOf {
+            birthDate?.let { DateUtils.calculateAge(it) }
+        }
+    }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
@@ -204,26 +214,31 @@ fun OnboardingPersonalInfoStep(
             modifier      = Modifier.fillMaxWidth(),
             singleLine    = true
         )
-
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Birthdate picker
         OutlinedTextField(
-            value         = birthDate?.let {
+            value = birthDate?.let {
                 SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(it)
             } ?: "",
             onValueChange = { },
-            label         = { Text("Birth Date") },
-            leadingIcon   = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
-            modifier      = Modifier
+            label = { Text("Birthday") },
+            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            modifier = Modifier
                 .fillMaxWidth()
                 .clickable { showDatePicker = true },
-            readOnly      = true,
-            enabled       = false
+            readOnly = true,
+            enabled = false
         )
-
         Spacer(modifier = Modifier.height(12.dp))
-
+        OutlinedTextField(
+            value = age?.toString() ?: "",
+            onValueChange = { },
+            label = { Text("Age") },
+            leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            enabled = false
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         // Gender selector
         Text(
             "Gender",
@@ -244,7 +259,6 @@ fun OnboardingPersonalInfoStep(
 }
 
 // ─── Step 2: Physical Attributes + Body Composition (merged) ──────────────────────
-
 @Composable
 fun OnboardingPhysicalCompositionStep(
     initialData: OnboardingData,

@@ -77,20 +77,21 @@ class IdentityRepositoryImpl @Inject constructor(
     )
 
     private fun DailyStandardEntryEntity.toDomain() = DailyStandardEntry(
-        id = id,
-        uID = uID,
-        standardId = standardId,
-        standardTitle = standardTitle,
-        standardType = StandardType.valueOf(standardType),
-        roleId = roleId,
-        roleName = roleName,
-        date = date,
-        isCompleted = isCompleted,
-        completedAt = completedAt,
-        xpAwarded = xpAwarded,
-        autoValidated = autoValidated,
+        id             = id,
+        uID            = uID,
+        standardId     = standardId,
+        standardTitle  = standardTitle,
+        standardType   = StandardType.valueOf(standardType),
+        roleId         = roleId,
+        roleName       = roleName,
+        date           = date,
+        isCompleted    = isCompleted,
+        isFailed       = isFailed,       // ← NUEVO
+        completedAt    = completedAt,
+        xpAwarded      = xpAwarded,
+        autoValidated  = autoValidated,
         penaltyApplied = penaltyApplied,
-        isSynced = isSynced
+        isSynced       = isSynced
     )
 
     // ─── Perfil de identidad ──────────────────────────────────────────────────────
@@ -265,7 +266,37 @@ class IdentityRepositoryImpl @Inject constructor(
     }
 
     override suspend fun autoValidateNutrition(uID: String): Resource<Unit> {
-        TODO("Not yet implemented")
+        return try {
+            val (start, end) = todayBoundaries()
+
+            val profile    = identityProfileDao.get(uID)
+            val standards: List<IdentityStandard> = profile?.let {
+                gson.fromJson(it.standards, standardsType)
+            } ?: emptyList()
+
+            // XP sumado de todos los estándares NUTRITION activos
+            val nutritionXP = standards
+                .filter { it.type == StandardType.NUTRITION && it.isActive }
+                .sumOf { it.xpReward }
+                .takeIf { it > 0 } ?: 20
+
+            // Reutiliza el mismo query SQL que autoValidateTraining pero para NUTRITION
+            standardEntryDao.autoValidateByType(
+                uID         = uID,
+                startOfDay  = start,
+                endOfDay    = end,
+                completedAt = System.currentTimeMillis(),
+                xpAwarded   = nutritionXP,
+                standardType = "NUTRITION"    // ← parámetro nuevo en el DAO
+            )
+
+            awardXPToPlayer(uID, nutritionXP)
+            Timber.tag(TAG).i("✔ Estándar(es) NUTRITION auto-validado(s) → +$nutritionXP XP")
+            Resource.Success(Unit)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "autoValidateNutrition() falló")
+            Resource.Error(e.message ?: "Error en auto-validación NUTRITION")
+        }
     }
 
     // ─── Penalización de medianoche ───────────────────────────────────────────────

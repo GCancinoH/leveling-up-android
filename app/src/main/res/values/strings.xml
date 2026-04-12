@@ -91,5 +91,11 @@
     <string name="nav_skip">Skip</string>
     <string name="nav_next">Next</string>
     <string name="qb_mirrorMode">Mirror Mode: If the person you want to become  could see today\\\'s version of you — what would they say?</string>
+    <string name="identity_score_empty">No progress today</string>
+    <string name="identity_score_lbl_high">Almost perfect</string>
+    <string name="identity_score_lbl_medium">Partially aligned</string>
+    <string name="identity_score_lbl_low">Below your standards</string>
+    <string name="identity_score_lbl_none">No progress today</string>
+    <string name="identity_score_lbl_perfect">Identity accomplished</string>
 
 </resources>

@@ -152,6 +152,78 @@ class GeneratedQuestManager @Inject constructor(
         }
     }
 
+    suspend fun evaluateNutritionImpact(uID: String, standardId: String) {
+        val quest = questDao.getActive(uID) ?: return
+
+        val targetIds: List<String> = gson.fromJson(
+            quest.targetStandardIds,
+            object : TypeToken<List<String>>() {}.type
+        )
+
+        // Si el estándar no es target de esta quest, no hacer nada
+        if (standardId !in targetIds) return
+
+        val today          = timeProvider.today()
+        val (start, end)   = timeProvider.dayBoundaries(today)
+        val entries        = standardEntryDao.getForDay(uID, start, end)
+            .filter { it.standardId in targetIds }
+
+        val type    = GeneratedQuestType.valueOf(quest.type)
+        val success = when (type) {
+            GeneratedQuestType.STREAK      -> entries.all { it.isCompleted }
+            GeneratedQuestType.CONSISTENCY -> entries.any { it.isCompleted }
+            GeneratedQuestType.ELIMINATION -> entries.all { it.isCompleted }
+        }
+
+        if (success) {
+            val newProgress = quest.currentProgress + 1
+            questDao.updateProgress(quest.id, newProgress)
+            Timber.tag(TAG).d(
+                "Quest progress (nutrition impact) → ${newProgress}/${quest.goal}"
+            )
+
+            if (newProgress >= quest.goal) {
+                questDao.updateStatus(
+                    quest.id,
+                    GeneratedQuestStatus.COMPLETED.name,
+                    System.currentTimeMillis()
+                )
+                awardQuestXP(uID, quest.xpReward)
+                Timber.tag(TAG).i("✔ Quest completada por impacto nutricional → +${quest.xpReward} XP")
+            }
+        }
+    }
+
+    suspend fun evaluateGeneralNutrition(uID: String, alignmentScore: Float) {
+        val quest = questDao.getActive(uID) ?: return
+
+        val targetIds: List<String> = gson.fromJson(
+            quest.targetStandardIds,
+            object : TypeToken<List<String>>() {}.type
+        )
+
+        // Solo actúa si la quest tiene estándares NUTRITION como targets
+        val today        = timeProvider.today()
+        val (start, end) = timeProvider.dayBoundaries(today)
+        val nutritionTargets = standardEntryDao.getForDay(uID, start, end)
+            .filter { it.standardId in targetIds && it.standardType == "NUTRITION" }
+
+        if (nutritionTargets.isEmpty()) return
+
+        // Score ≥ 0.7 cuenta como progreso para este día
+        if (alignmentScore >= 0.7f) {
+            val newProgress = quest.currentProgress + 1
+            questDao.updateProgress(quest.id, newProgress)
+            Timber.tag(TAG).d("Quest general nutrition progress → $newProgress/${quest.goal}")
+
+            if (newProgress >= quest.goal) {
+                questDao.updateStatus(quest.id, GeneratedQuestStatus.COMPLETED.name,
+                    System.currentTimeMillis())
+                awardQuestXP(uID, quest.xpReward)
+            }
+        }
+    }
+
     private suspend fun awardQuestXP(uID: String, xp: Int) {
         val progress = playerProgressDao.getPlayerProgress(uID) ?: return
         val newXP    = (progress.exp ?: 0) + xp

@@ -91,5 +91,11 @@
     <string name="nav_skip">Omitir</string>
     <string name="nav_next">Siguiente</string>
     <string name="qb_mirrorMode">Modo espejo: Si la persona en la que quieres convertirte pudiera ver tu versión actual, ¿qué diría?</string>
+    <string name="identity_score_empty">Sin progreso hoy</string>
+    <string name="identity_score_lbl_perfect">Identidad cumplida</string>
+    <string name="identity_score_lbl_high">Casi Perfecto</string>
+    <string name="identity_score_lbl_medium">Parcialmente alineado</string>
+    <string name="identity_score_lbl_low">Debajo de tu estándar</string>
+    <string name="identity_score_lbl_none">Sin progreso hoy</string>
 
 </resources>

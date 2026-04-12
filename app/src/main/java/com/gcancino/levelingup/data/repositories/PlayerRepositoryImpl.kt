@@ -237,6 +237,61 @@ class PlayerRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun syncUnsynced(): Resource<Unit> {
+        val user = auth.currentUser ?: return Resource.Error("User not logged in")
+        val uid = user.uid
+
+        return try {
+            var hasUpdates = false
+            val batchWrite = db.batch()
+
+            val localPlayer = withContext(Dispatchers.IO) { localDB.playerDao().getPlayer(uid) }
+            val localAttributes = withContext(Dispatchers.IO) { localDB.playerAttributesDao().getPlayerAttributes(uid) }
+            val localProgress = withContext(Dispatchers.IO) { localDB.playerProgressDao().getPlayerProgress(uid) }
+            val localStreak = withContext(Dispatchers.IO) { localDB.playerStreakDao().getPlayerStreak(uid) }
+
+            if (localPlayer?.needsSync == true) {
+                batchWrite.set(db.collection("players").document(uid), localPlayer.toDomain())
+                hasUpdates = true
+            }
+            if (localAttributes?.needSync == true) {
+                batchWrite.set(db.collection("player_attributes").document(uid), localAttributes.toDomain())
+                hasUpdates = true
+            }
+            if (localProgress?.needSync == true) {
+                batchWrite.set(db.collection("player_progress").document(uid), localProgress.toDomain())
+                hasUpdates = true
+            }
+            if (localStreak?.needSync == true) {
+                batchWrite.set(db.collection("player_streaks").document(uid), localStreak.toDomain())
+                hasUpdates = true
+            }
+
+            if (hasUpdates) {
+                batchWrite.commit().await()
+                val now = Date()
+                val nowTime = now.time
+                withContext(Dispatchers.IO) {
+                    localDB.withTransaction {
+                        if (localPlayer?.needsSync == true) localDB.playerDao().markAsSynced(uid, now)
+                        if (localAttributes?.needSync == true) localDB.playerAttributesDao().updateSyncStatus(uid, false, nowTime)
+                        if (localProgress?.needSync == true) localDB.playerProgressDao().updateSyncStatus(uid, false, nowTime)
+                        if (localStreak?.needSync == true) {
+                            localDB.playerStreakDao().updatePlayerStreak(localStreak.copy(needSync = false, lastSync = nowTime))
+                        }
+                    }
+                }
+                Timber.tag("PlayerRepository").i("✔ Nightly sync for PlayerData committed")
+            } else {
+                Timber.tag("PlayerRepository").i("No PlayerData to sync")
+            }
+            
+            Resource.Success(Unit)
+        } catch (e: Exception) {
+            Resource.Error("syncUnsynced failed: ${e.message}")
+        }
+    }
+
     private suspend fun fetchFullPlayerDataFromFirestore(uid: String): PlayerData? {
         return try {
             coroutineScope {

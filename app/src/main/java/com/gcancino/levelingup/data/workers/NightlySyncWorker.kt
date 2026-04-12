@@ -10,6 +10,7 @@ import com.gcancino.levelingup.domain.logic.DailyResetManager
 import com.gcancino.levelingup.domain.repositories.BodyDataRepository
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.IdentityRepository
+import com.gcancino.levelingup.domain.repositories.PlayerRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -31,6 +32,7 @@ class NightlySyncWorker @AssistedInject constructor(
     private val bodyDataRepository: BodyDataRepository,
     private val dailyTasksRepository: DailyTasksRepository,
     private val identityRepository: IdentityRepository,
+    private val playerRepository: PlayerRepository,
     private val dailyResetManager: DailyResetManager  // safety net
 ) : CoroutineWorker(context, params) {
 
@@ -56,9 +58,10 @@ class NightlySyncWorker @AssistedInject constructor(
                 val bodySync     = async { bodyDataRepository.syncUnsynced() }
                 val dailySync    = async { dailyTasksRepository.syncUnsynced() }
                 val identitySync = async { identityRepository.syncUnsynced() }
+                val playerSync   = async { playerRepository.syncUnsynced() }
 
                 resetJob.await()
-                val results: List<Resource<*>> = awaitAll(bodySync, dailySync, identitySync)
+                val results: List<Resource<*>> = awaitAll(bodySync, dailySync, identitySync, playerSync)
 
                 val error = results.filterIsInstance<Resource.Error<*>>().firstOrNull()
                 if (error != null) {
