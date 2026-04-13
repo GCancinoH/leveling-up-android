@@ -1,6 +1,5 @@
-package com.gcancino.levelingup.domain.use_cases.nutrition
+package com.gcancino.levelingup.domain.useCases.nutrition
 
-import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.dao.DailyStandardEntryDao
 import com.gcancino.levelingup.domain.logic.GeneratedQuestManager
 import com.gcancino.levelingup.domain.logic.TimeProvider

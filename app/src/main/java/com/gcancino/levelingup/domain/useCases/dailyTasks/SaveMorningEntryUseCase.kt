@@ -1,4 +1,4 @@
-package com.gcancino.levelingup.domain.use_cases.dailyTasks
+package com.gcancino.levelingup.domain.useCases.dailyTasks
 
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.domain.models.dailyTasks.MorningEntry

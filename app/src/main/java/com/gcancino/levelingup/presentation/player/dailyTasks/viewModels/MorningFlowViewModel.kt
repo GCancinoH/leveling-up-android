@@ -9,7 +9,7 @@ import com.gcancino.levelingup.domain.models.QuestionBank
 import com.gcancino.levelingup.domain.models.dailyTasks.MorningEntry
 import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
 import com.gcancino.levelingup.domain.models.dailyTasks.ReflectionAnswer
-import com.gcancino.levelingup.domain.use_cases.dailyTasks.SaveMorningEntryUseCase
+import com.gcancino.levelingup.domain.useCases.dailyTasks.SaveMorningEntryUseCase
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers

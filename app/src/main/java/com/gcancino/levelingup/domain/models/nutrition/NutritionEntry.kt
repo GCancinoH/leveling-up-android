@@ -25,6 +25,7 @@ data class NutritionEntry(
     val suggestion: String,
     val alignmentScore: Float = 0f,      // 0.0–1.0, calculado en Python
     val action: NutritionAction? = null,
+    val isFailed: Boolean = false,
     val isSynced: Boolean = false
 ) {
     val macroSummary get() = MacroSummary(calories, proteinG, carbsG, fatsG, fiberG)
