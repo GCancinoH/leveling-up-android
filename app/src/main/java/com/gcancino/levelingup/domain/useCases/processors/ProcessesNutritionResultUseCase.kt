@@ -1,4 +1,4 @@
-package com.gcancino.levelingup.domain.useCases.processor
+package com.gcancino.levelingup.domain.useCases.processors
 
 import com.gcancino.levelingup.domain.models.nutrition.NutritionEntry
 import javax.inject.Inject

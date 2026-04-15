@@ -1,4 +1,4 @@
-package com.gcancino.levelingup.domain.useCases.processor
+package com.gcancino.levelingup.domain.useCases.processors
 
 import javax.inject.Inject
 import javax.inject.Singleton

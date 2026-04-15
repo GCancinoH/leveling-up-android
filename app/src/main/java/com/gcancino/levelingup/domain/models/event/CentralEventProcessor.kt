@@ -1,7 +1,6 @@
 package com.gcancino.levelingup.domain.models.event
 
-import com.gcancino.levelingup.domain.models.event.PlayerEvent
-import com.gcancino.levelingup.domain.useCases.processor.*
+import com.gcancino.levelingup.domain.useCases.processors.*
 import javax.inject.Inject
 import javax.inject.Singleton
 

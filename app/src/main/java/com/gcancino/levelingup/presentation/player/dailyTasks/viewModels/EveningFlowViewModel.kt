@@ -11,7 +11,9 @@ import com.gcancino.levelingup.domain.models.dailyTasks.EveningEntry
 import com.gcancino.levelingup.domain.models.dailyTasks.ReflectionAnswer
 import com.gcancino.levelingup.domain.models.dailyTasks.TaskPriority
 import com.gcancino.levelingup.domain.models.dailyTasks.XPScale
+import com.gcancino.levelingup.domain.models.event.EveningAnswer
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
+import com.gcancino.levelingup.domain.useCases.processors.ProcessEveningFlowUseCase
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +33,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EveningFlowViewModel @Inject constructor(
     private val dailyRepository: DailyTasksRepository,
+    private val processEveningFlowUseCase: ProcessEveningFlowUseCase,
     private val dataStoreManager: DataStoreManager,
     private val auth: FirebaseAuth
 ) : ViewModel() {
@@ -160,16 +163,49 @@ class EveningFlowViewModel @Inject constructor(
                 dailyRepository.saveTasks(_tasks.value)
             } else Resource.Success(Unit)
 
-            val finalResult = if (entryResult is Resource.Error) entryResult 
-                              else if (tasksResult is Resource.Error) tasksResult 
-                              else Resource.Success(Unit)
+            // Check for errors in save operations
+            if (entryResult is Resource.Error) {
+                _saveState.value = entryResult
+                return@launch
+            }
+
+            if (tasksResult is Resource.Error) {
+                _saveState.value = tasksResult
+                return@launch
+            }
+
+            // Step 3: Process the flow through the central UseCase
+            val eveningAnswers = questions.mapNotNull { q ->
+                _answers.value[q.id]?.let { answer ->
+                    EveningAnswer(q.id, answer)
+                }
+            }
+
+            when (val processResult = processEveningFlowUseCase.execute(uID, eveningAnswers)) {
+                is ProcessEveningFlowUseCase.Result.Success -> {
+                    dataStoreManager.clearEveningDraft()
+                    Timber.tag(TAG).i(
+                        "✔ Evening flow complete → XP: ${processResult.xpEarned} | " +
+                                "Level: ${processResult.newLevel} | Quality: ${processResult.reflectionQuality} | " +
+                                "Tasks: ${_tasks.value.size}"
+                    )
+                    _saveState.value = Resource.Success(Unit)
+                }
+                is ProcessEveningFlowUseCase.Result.Failure -> {
+                    Timber.tag(TAG).e("ProcessEveningFlow failed: ${processResult.reason}")
+                    _saveState.value = Resource.Error(processResult.reason)
+                }
+            }
+
+            /*val finalResult = entryResult as? Resource.Error
+                ?: (tasksResult as? Resource.Error ?: Resource.Success(Unit))
             
             _saveState.value = finalResult
             
             if (finalResult is Resource.Success) {
                 dataStoreManager.clearEveningDraft()
                 Timber.tag(TAG).i("✔ Evening entry + ${_tasks.value.size} task(s) saved")
-            }
+            }*/
         }
     }
 }
