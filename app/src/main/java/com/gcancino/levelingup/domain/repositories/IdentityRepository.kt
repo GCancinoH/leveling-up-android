@@ -18,5 +18,6 @@ interface IdentityRepository {
     suspend fun autoValidateTraining(uID: String): Resource<Unit>
     suspend fun autoValidateNutrition(uID: String): Resource<Unit>
     suspend fun applyMidnightPenalty(uID: String): Resource<Unit>
+    suspend fun markTrainingFailed(uID: String): Resource<Unit>
     suspend fun syncUnsynced(): Resource<Unit>
 }

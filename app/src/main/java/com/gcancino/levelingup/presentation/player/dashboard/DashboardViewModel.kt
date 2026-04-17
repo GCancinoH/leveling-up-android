@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -41,7 +42,15 @@ class DashboardViewModel @Inject constructor(
 
     private val TAG = "DashboardViewModel"
 
-    val uID = auth.currentUser?.uid ?: ""
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    val uID: String by lazy {
+        auth.currentUser?.uid ?: run {
+            _authError.value = "User not authenticated"
+            ""
+        }
+    }
 
     // Sync State
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
@@ -51,26 +60,43 @@ class DashboardViewModel @Inject constructor(
     private val _todaySession = MutableStateFlow<Resource<TrainingSession?>>(Resource.Loading())
     val todaySession: StateFlow<Resource<TrainingSession?>> = _todaySession.asStateFlow()
 
-    // Time Window for Daily Tasks
-    private val currentHour = LocalDateTime.now().hour
-    private val morningWindowOpen = currentHour in 5..11
-    private val eveningWindowOpen = currentHour in 21..23
-    private val hasDoneMorning = dailyTasksRepository.observeMorningCompletedToday(uID)
-    private val hasDoneEvening = dailyTasksRepository.observeEveningCompletedToday(uID)
-    val showMorningCTA: StateFlow<Boolean> = hasDoneMorning
-        .map { done -> morningWindowOpen && !done }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private val _timeWindowTrigger = MutableStateFlow(0)
+    private val hasDoneMorning = if (uID.isNotEmpty()) {
+        dailyTasksRepository.observeMorningCompletedToday(uID)
+    } else flowOf(false)
+    private val hasDoneEvening = if (uID.isNotEmpty()) {
+        dailyTasksRepository.observeEveningCompletedToday(uID)
+    } else flowOf(false)
+    
+    val showMorningCTA: StateFlow<Boolean> = combine(
+        _timeWindowTrigger,
+        hasDoneMorning
+    ) { _, done ->
+        val hour = LocalDateTime.now().hour
+        val morningOpen = hour in 5..11
+        morningOpen && !done
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    val showEveningCTA: StateFlow<Boolean> = hasDoneEvening
-        .map { done -> eveningWindowOpen && !done }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val showEveningCTA: StateFlow<Boolean> = combine(
+        _timeWindowTrigger,
+        hasDoneEvening
+    ) { _, done ->
+        val hour = LocalDateTime.now().hour
+        val eveningOpen = hour in 21..23
+        eveningOpen && !done
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _showTaskCreationSheet = MutableStateFlow(false)
     val showTaskCreationSheet: StateFlow<Boolean> = _showTaskCreationSheet.asStateFlow()
 
     init {
         Timber.tag(TAG).d("ViewModel initialized. Starting week sync...")
-        syncAndLoad()
+        
+        if (uID.isNotEmpty()) {
+            syncAndLoad()
+        } else {
+            Timber.tag(TAG).w("User not authenticated, skipping sync")
+        }
     }
 
     /**

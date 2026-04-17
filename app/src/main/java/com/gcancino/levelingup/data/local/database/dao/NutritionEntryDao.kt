@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 interface NutritionEntryDao {
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insert(entity: NutritionEntryEntity)
+    suspend fun insert(entity: NutritionEntryEntity): Unit
 
     // Today's entries — for the daily nutrition dashboard
     @Query("""

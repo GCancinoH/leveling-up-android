@@ -99,13 +99,13 @@ dependencies {
     implementation(libs.splashScreen)
     // DataStore
     implementation(libs.storage.datastore)
+    implementation(libs.timber)
+    implementation(libs.security.crypto)
 
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
-    //kapt(libs.room.compiler)
-    //annotationProcessor(libs.room.processor)
 
     // Camera
     implementation(libs.camerax.core)
@@ -133,6 +133,7 @@ dependencies {
     // Kotlin Reflect
     implementation(libs.kotlin.reflect)
     implementation(libs.sqlCipher)
+    implementation(libs.androidSqlCipher)
     // Vosk Speech Recognition
     implementation(libs.vosk)
     // ReOwn
@@ -152,7 +153,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    //implementation("com.composables:core:1.37.0")
 
 }
 

@@ -365,20 +365,29 @@ class PlayerRepositoryImpl @Inject constructor(
 
     private suspend fun savePlayerToFirestore(playerData: PlayerData): Resource<Unit> {
         return try {
+            val player = playerData.player
+                ?: return Resource.Error("Player data is missing")
+            val attributes = playerData.attributes
+                ?: return Resource.Error("Attributes data is missing")
+            val progress = playerData.progress
+                ?: return Resource.Error("Progress data is missing")
+            val streak = playerData.streak
+                ?: return Resource.Error("Streak data is missing")
+
             val batchWrite = db.batch()
-            val pid = playerData.player!!.uid
+            val pid = player.uid
 
             val playerDocRef = db.collection("players").document(pid)
-            batchWrite.set(playerDocRef, playerData.player)
+            batchWrite.set(playerDocRef, player)
 
             val attributesDocRef = db.collection("player_attributes").document(pid)
-            batchWrite.set(attributesDocRef, playerData.attributes!!)
+            batchWrite.set(attributesDocRef, attributes)
 
             val progressDocRef = db.collection("player_progress").document(pid)
-            batchWrite.set(progressDocRef, playerData.progress!!)
+            batchWrite.set(progressDocRef, progress)
 
             val streakDocRef = db.collection("player_streaks").document(pid)
-            batchWrite.set(streakDocRef, playerData.streak!!)
+            batchWrite.set(streakDocRef, streak)
 
             batchWrite.commit().await()
             Resource.Success(Unit)

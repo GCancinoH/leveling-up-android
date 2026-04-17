@@ -1,5 +1,8 @@
 package com.gcancino.levelingup.domain.useCases.processors
 
+import com.gcancino.levelingup.core.Resource
+import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,35 +13,30 @@ import javax.inject.Singleton
  */
 @Singleton
 class ProcessTaskCompletionUseCase @Inject constructor(
-    // private val taskRepository: TaskRepository,
-    // private val playerRepository: PlayerRepository,
-    // private val penaltyManager: PenaltyManager
+    private val dailyTasksRepository: DailyTasksRepository,
 ) {
+    private val TAG = "ProcessTaskUC"
 
+    data class Result(val xpEarned: Int, val newLevel: Int)
     /**
      * Ejecuta el procesamiento completo de una tarea completada.
      */
-    suspend fun execute(taskId: String) {
-        // TODO: Implementar lógica completa
-        // 1. Validar tarea existe
-        // 2. Marcar como completada
-        // 3. Calcular recompensas
-        // 4. Actualizar streak si corresponde
-        // 5. Loguear evento
-
-        println("Processing task completion: $taskId")
+    suspend fun execute(taskId: String, uID: String): Resource<Result> {
+        return when (val r = dailyTasksRepository.completeTask(taskId, uID)) {
+            is Resource.Success -> {
+                Timber.tag(TAG).i("✔ Task completada → nivel: ${r.data}")
+                Resource.Success(Result(xpEarned = 0, newLevel = r.data ?: 1))
+            }
+            is Resource.Error -> Resource.Error(r.message ?: "Failed to complete task")
+            else -> Resource.Error("Unexpected state")
+        }
     }
 
     /**
      * Procesa el fallo de una tarea.
      */
-    suspend fun fail(taskId: String, reason: String?) {
-        // TODO: Implementar lógica de fallo
-        // 1. Registrar fallo
-        // 2. Aplicar penalización si corresponde
-        // 3. Verificar si rompe streak
-        // 4. Posiblemente crear penalty quest
-
-        println("Processing task failure: $taskId, Reason: $reason")
+    suspend fun fail(taskId: String, reason: String?, uID: String) {
+        // Solo logging — la penalización la aplica DailyResetManager
+        Timber.tag(TAG).w("Task $taskId marcada como fallida | razón: $reason")
     }
 }

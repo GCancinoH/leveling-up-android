@@ -341,6 +341,24 @@ class IdentityRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun markTrainingFailed(uID: String): Resource<Unit> {
+        return try {
+            val (start, end) = todayBoundaries()
+            // Marca isFailed=true en todos los estándares TRAINING del día
+            // que no estén completados — igual que markFailedByStandardId pero por tipo
+            standardEntryDao.markFailedByType(
+                uID          = uID,
+                standardType = "TRAINING",
+                startOfDay   = start,
+                endOfDay     = end
+            )
+            Timber.tag(TAG).i("✔ TRAINING standards marcados como isFailed")
+            Resource.Success(Unit)
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "Error marcando training como fallido")
+        }
+    }
+
     // ─── Sync ─────────────────────────────────────────────────────────────────────
     override suspend fun syncUnsynced(): Resource<Unit> {
         return try {

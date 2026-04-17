@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.gcancino.levelingup.data.workers.MidnightPenaltyWorker
 import com.gcancino.levelingup.data.workers.NightlySyncWorker
 import com.gcancino.levelingup.data.workers.WeeklySyncWorker
+import com.google.firebase.BuildConfig
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -22,7 +23,9 @@ class LevelingUpApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Timber.plant(Timber.DebugTree())
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
         // Firebase must stay on main thread — it's fast and required before any DI
         FirebaseApp.initializeApp(this)

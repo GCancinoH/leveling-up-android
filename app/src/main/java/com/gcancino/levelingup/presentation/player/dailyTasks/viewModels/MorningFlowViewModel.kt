@@ -10,6 +10,7 @@ import com.gcancino.levelingup.domain.models.dailyTasks.MorningEntry
 import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
 import com.gcancino.levelingup.domain.models.dailyTasks.ReflectionAnswer
 import com.gcancino.levelingup.domain.models.event.MorningAnswer
+import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.useCases.dailyTasks.SaveMorningEntryUseCase
 import com.gcancino.levelingup.domain.useCases.processors.ProcessMorningFlowUseCase
 import com.google.firebase.auth.FirebaseAuth
@@ -30,7 +31,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MorningFlowViewModel @Inject constructor(
-    private val saveMorningEntryUseCase: SaveMorningEntryUseCase,
+    private val dailyRepository: DailyTasksRepository,
     private val processMorningFlowUseCase: ProcessMorningFlowUseCase,
     private val auth: FirebaseAuth,
     private val dataStoreManager: DataStoreManager,
@@ -105,19 +106,20 @@ class MorningFlowViewModel @Inject constructor(
         .map { it == totalSteps - 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /**
+     * Saving data to the database.
+     */
     fun save(questionTexts: Map<String, String>) {
         val uID = auth.currentUser?.uid ?: run {
             _saveState.value = Resource.Error("Not authenticated"); return
         }
-
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.value = Resource.Loading()
 
-            // Map answers to the Domain model
             val entry = MorningEntry(
-                id = UUID.randomUUID().toString(),
-                uID = uID,
-                date = Date(),
+                id      = UUID.randomUUID().toString(),
+                uID     = uID,
+                date    = Date(),
                 answers = questions.mapNotNull { q ->
                     _answers.value[q.id]?.let { answer ->
                         ReflectionAnswer(q.id, questionTexts[q.id] ?: "", answer)
@@ -126,46 +128,33 @@ class MorningFlowViewModel @Inject constructor(
                 isSynced = false
             )
 
-            // Use the Use Case!
-            val saveResult = saveMorningEntryUseCase(uID, entry)
-
-            if (saveResult is Resource.Success) {
-                // Step 2: Process the flow through the central UseCase
-                val morningAnswers = questions.mapNotNull { q ->
-                    _answers.value[q.id]?.let { answer ->
-                        MorningAnswer(q.id, answer)
-                    }
-                }
-
-                val processResult = processMorningFlowUseCase.execute(uID, morningAnswers)
-
-                when (processResult) {
-                    is ProcessMorningFlowUseCase.Result.Success -> {
-                        // Clear penalty prefs after showing and successful save
-                        dataStoreManager.clearPenalty()
-                        dataStoreManager.clearMorningDraft()
-                        Timber.tag(TAG).i(
-                            "✔ Morning flow complete → XP: ${processResult.xpEarned} | " +
-                                    "Level: ${processResult.newLevel} | Answers: ${processResult.answerCount}"
-                        )
-                        _saveState.value = Resource.Success(processResult.newLevel)
-                    }
-                    is ProcessMorningFlowUseCase.Result.Failure -> {
-                        Timber.tag(TAG).e("ProcessMorningFlow failed: ${processResult.reason}")
-                        _saveState.value = Resource.Error(processResult.reason)
-                    }
-                }
-            } else if (saveResult is Resource.Error) {
+            // Primero guardar la entry en Room
+            val saveResult = dailyRepository.saveMorningEntry(entry)
+            if (saveResult is Resource.Error) {
                 _saveState.value = Resource.Error(saveResult.message ?: "Failed to save")
+                return@launch
             }
-            /*_saveState.value = result
 
-            if (result is Resource.Success) {
-                // Clear penalty prefs after showing and successful save
-                dataStoreManager.clearPenalty()
-                dataStoreManager.clearMorningDraft()
-                Timber.tag(TAG).i("✔ Morning entry saved and XP awarded. New Level: ${result.data}")
-            }*/
+            // Luego procesar via CEP (solo XP + análisis — NO duplica el save)
+            val morningAnswers = questions.mapNotNull { q ->
+                _answers.value[q.id]?.let { answer -> MorningAnswer(q.id, answer) }
+            }
+
+            when (val result = processMorningFlowUseCase.execute(uID, morningAnswers)) {
+                is ProcessMorningFlowUseCase.Result.Success -> {
+                    dataStoreManager.clearPenalty()
+                    dataStoreManager.clearMorningDraft()
+                    Timber.tag(TAG).i(
+                        "✔ Morning flow completo → XP: ${result.xpEarned} | " +
+                                "Level: ${result.newLevel}"
+                    )
+                    _saveState.value = Resource.Success(result.newLevel)
+                }
+                is ProcessMorningFlowUseCase.Result.Failure -> {
+                    Timber.tag(TAG).e("ProcessMorningFlow failed: ${result.reason}")
+                    _saveState.value = Resource.Error(result.reason)
+                }
+            }
         }
     }
 }

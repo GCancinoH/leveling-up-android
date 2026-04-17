@@ -1,5 +1,8 @@
 package com.gcancino.levelingup.domain.useCases.processors
 
+import com.gcancino.levelingup.data.local.database.dao.PlayerStreakDao
+import com.gcancino.levelingup.domain.logic.GeneratedQuestManager
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -8,35 +11,28 @@ import javax.inject.Singleton
  */
 @Singleton
 class ProcessStreakUpdateUseCase @Inject constructor(
-    // private val playerRepository: PlayerRepository,
-    // private val questRepository: QuestRepository
+    private val playerStreakDao: PlayerStreakDao,
+    private val generatedQuestManager: GeneratedQuestManager
 ) {
+    private val TAG = "ProcessStreakUC"
 
     /**
      * Ejecuta el procesamiento cuando un streak se rompe.
      */
-    suspend fun onStreakBroken(category: String, previousStreak: Int) {
-        // TODO: Implementar lógica completa
-        // 1. Registrar ruptura de streak
-        // 2. Aplicar penalización si corresponde
-        // 3. Notificar al usuario (feedback inmediato)
-        // 4. Posiblemente crear penalty quest
-        // 5. Loguear evento
-
-        println("Streak broken in $category. Previous streak: $previousStreak")
+    suspend fun onStreakBroken(category: String, previousStreak: Int, uID: String) {
+        Timber.tag(TAG).w(
+            "💀 Racha rota en '$category' | era: $previousStreak días"
+        )
+        // El reset real lo hace DailyResetManager.handleCleanDay/evaluateDay
+        // para garantizar idempotencia. Aquí solo logging.
     }
 
     /**
      * Ejecuta el procesamiento cuando un streak se extiende.
      */
-    suspend fun onStreakExtended(category: String, currentStreak: Int) {
-        // TODO: Implementar lógica completa
-        // 1. Actualizar streak en repositorio
-        // 2. Calcular bonus por racha (XP extra)
-        // 3. Verificar milestones (7, 30, 100 días)
-        // 4. Notificar al usuario con feedback positivo
-        // 5. Loguear evento
-
-        println("Streak extended in $category. Current streak: $currentStreak")
+    suspend fun onStreakExtended(category: String, currentStreak: Int, uID: String) {
+        Timber.tag(TAG).i("🔥 Racha extendida en '$category' → $currentStreak días")
+        // El milestone/token lo maneja DailyResetManager.handleCleanDay()
+        // Este hook es para UI feedback inmediato solamente.
     }
 }

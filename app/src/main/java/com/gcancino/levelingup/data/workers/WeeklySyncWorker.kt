@@ -31,6 +31,7 @@ import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 
 @HiltWorker
 class WeeklySyncWorker @AssistedInject constructor(
@@ -40,19 +41,15 @@ class WeeklySyncWorker @AssistedInject constructor(
     private val identityProfileDao: IdentityProfileDao,
     private val standardEntryDao: DailyStandardEntryDao,
     private val weeklyReportDao: WeeklyReportDao,
-    private val generatedQuestManager: GeneratedQuestManager
+    private val generatedQuestManager: GeneratedQuestManager,
+    private val gson: Gson,
+    @Named("BaseOkHttp") private val http: OkHttpClient
 ) : CoroutineWorker(context, params) {
 
     private val TAG = "WeeklySyncWorker"
 
-    // ← Change to your server URL. For local testing with emulator: http://10.0.2.2:5000
-    private val FLASK_BASE_URL = "https://leveling-up-server.vercel.app"
-
-    private val gson = Gson()
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS) // LLM can take time
-        .build()
+    // ← Backend URL from centralized Config
+    private val FLASK_BASE_URL = com.gcancino.levelingup.core.Config.BACKEND_ENDPOINT
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         Timber.tag(TAG).d("WeeklySyncWorker started")
@@ -127,7 +124,10 @@ class WeeklySyncWorker @AssistedInject constructor(
         val response = http.newCall(request).execute()
         if (!response.isSuccessful) throw Exception("Flask error ${response.code}")
 
-        val json = JSONObject(response.body.string())
+        val responseBody = response.body?.string()
+            ?: throw Exception("Empty response body from Flask")
+
+        val json = JSONObject(responseBody)
 
         val reportId = UUID.randomUUID().toString()
         weeklyReportDao.insert(

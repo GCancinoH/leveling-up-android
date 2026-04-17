@@ -17,6 +17,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import timber.log.Timber
 
 // ─── NightlySyncWorker ────────────────────────────────────────────────────────
@@ -48,24 +49,28 @@ class NightlySyncWorker @AssistedInject constructor(
         }
 
         return try {
-            coroutineScope {
+            supervisorScope {
                 val resetJob = async {
                     try { dailyResetManager.evaluateAndApply(uid) }
-                    catch (e: Exception) { Timber.tag(TAG).w("Reset failed: ${e.message}") }
+                    catch (e: Exception) { 
+                        Timber.tag(TAG).w("Reset failed: ${e.message}")
+                        null 
+                    }
                 }
 
                 val bodySync      = async { bodyDataRepository.syncUnsynced() }
                 val dailySync     = async { dailyTasksRepository.syncUnsynced() }
                 val identitySync  = async { identityRepository.syncUnsynced() }
                 val nutritionSync = async { nutritionRepository.syncUnsynced() }
-                val playerSync    = async { playerRepository.syncUnsynced() }  // ← NUEVO
+                val playerSync    = async { playerRepository.syncUnsynced() }
 
                 resetJob.await()
                 val results = awaitAll(bodySync, dailySync, identitySync, nutritionSync, playerSync)
 
-                val error = results.filterIsInstance<Resource.Error<*>>().firstOrNull()
-                if (error != null) {
-                    Timber.tag(TAG).e("Sync failed: ${error.message}")
+                val errors = results.filterIsInstance<Resource.Error<*>>()
+                if (errors.isNotEmpty()) {
+                    val errorMessages = errors.joinToString(", ") { it.message ?: "Unknown error" }
+                    Timber.tag(TAG).e("Sync failed: $errorMessages")
                     Result.retry()
                 } else {
                     Timber.tag(TAG).i("✔ Nightly sync complete")

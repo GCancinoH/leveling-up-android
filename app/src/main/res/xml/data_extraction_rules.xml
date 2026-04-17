@@ -1,19 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
+<?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Exclude sensitive Room database -->
+        <exclude domain="database" path="ascenso_db"/>
+        <exclude domain="database" path="ascenso_db-shm"/>
+        <exclude domain="database" path="ascenso_db-wal"/>
+
+        <!-- Exclude sensitive shared preferences -->
+        <exclude domain="sharedpref" path="penalty_prefs_secure.xml"/>
+        <exclude domain="sharedpref" path="penalty_prefs.xml"/>
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- For device transfer, we might allow it if encryption is handled, 
+             but for safety we exclude it here too if it's very sensitive -->
+        <exclude domain="database" path="ascenso_db"/>
+        <exclude domain="sharedpref" path="penalty_prefs_secure.xml"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

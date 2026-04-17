@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gcancino.levelingup.core.Resource
+import com.gcancino.levelingup.domain.models.event.CentralEventProcessor
+import com.gcancino.levelingup.domain.models.event.PlayerEvent
 import com.gcancino.levelingup.domain.models.identity.StandardType
 import com.gcancino.levelingup.domain.models.nutrition.MacroSummary
 import com.gcancino.levelingup.domain.models.nutrition.NutritionAction
@@ -27,14 +29,13 @@ import javax.inject.Inject
 class NutritionViewModel @Inject constructor(
     private val nutritionRepository: NutritionRepository,
     private val identityRepository: IdentityRepository,
-    private val dailyTasksRepository: DailyTasksRepository, // FIX 3 — para ADD_TASK
+    private val eventProcessor: CentralEventProcessor,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val uID get() = auth.currentUser?.uid ?: ""
 
     // ─── Identity context ──────────────────────────────────────────────────────
-
     private val profile = identityRepository
         .observeIdentityProfile(uID)
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -46,7 +47,6 @@ class NutritionViewModel @Inject constructor(
             ?: emptyList()
 
     // ─── Today's data ──────────────────────────────────────────────────────────
-
     val todayEntries: StateFlow<List<NutritionEntry>> = nutritionRepository
         .observeTodayEntries(uID)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -85,55 +85,25 @@ class NutritionViewModel @Inject constructor(
             _analyzeState.value = AnalyzeState.Analyzing
 
             val result = nutritionRepository.analyzeFood(
-                uID                = uID,
-                imageUri           = imageUri,
-                identityStatement  = profile.value?.identityStatement ?: "",
-                nutritionStandards = nutritionStandards  // FIX 1
+                uID               = uID,
+                imageUri          = imageUri,
+                identityStatement = profile.value?.identityStatement ?: "",
+                nutritionStandards = nutritionStandards
             )
 
             when (result) {
                 is Resource.Success -> {
                     val entry = result.data!!
-
-                    // Auto-validar estándar NUTRITION si la comida está alineada
-                    if (entry.alignment == NutritionAlignment.ALIGNED) {
-                        identityRepository.autoValidateNutrition(uID)
-                    }
-
-                    // FIX 3: ejecutar la acción estructurada del sistema
-                    entry.action?.let { handleAction(it, entry.foodIdentified) }
-
+                    // Toda la lógica de negocio (standards, quests, tasks)
+                    // pasa por el CEP — el ViewModel no toma decisiones
+                    eventProcessor.process(
+                        PlayerEvent.NutritionAnalyzed(nutritionEntry = entry, uID = uID)
+                    )
                     _analyzeState.value = AnalyzeState.Success(entry)
                 }
                 is Resource.Error -> _analyzeState.value = AnalyzeState.Error(result.message ?: "")
                 else              -> _analyzeState.value = AnalyzeState.Error("Unexpected error")
             }
-        }
-    }
-
-    // FIX 3: conectar acción con el sistema central
-    private suspend fun handleAction(action: NutritionAction, foodName: String) {
-        when (action.type) {
-            NutritionActionType.ADD_TASK -> {
-                // Crear tarea correctiva automática en DailyTasks
-                val taskTitle = action.taskTitle ?: return
-                dailyTasksRepository.saveTasks(listOf(
-                    com.gcancino.levelingup.domain.models.dailyTasks.DailyTask(
-                        id       = UUID.randomUUID().toString(),
-                        uID      = uID,
-                        date     = Date(),
-                        title    = taskTitle,
-                        priority = com.gcancino.levelingup.domain.models.dailyTasks.TaskPriority.INTERMEDIATE,
-                        xpReward = 5,
-                        isSynced = false
-                    )
-                ))
-            }
-            NutritionActionType.WARNING -> {
-                // El mensaje de warning ya está en entry.action.message
-                // La UI lo muestra — no se necesita lógica adicional aquí
-            }
-            NutritionActionType.NONE -> Unit
         }
     }
 

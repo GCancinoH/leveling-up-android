@@ -11,24 +11,31 @@ import com.gcancino.levelingup.domain.models.dataStore.PlayerPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
 
 class DataStoreManager(
-    context: Context
+    context: Context,
+    private val encryptedDraftsManager: EncryptedDraftsManager? = null,
+    private val dataStoreCryptoManager: DataStoreCryptoManager? = null
 ) {
     private val dataStore = context.applicationContext.userPreferencesStore
 
     private object PreferencesKey {
         val IS_PLAYER_DATA_SAVED_LOCALLY = booleanPreferencesKey("is_player_data_saved_locally")
         val ARE_QUESTS_LOADED = booleanPreferencesKey("are_quests_loaded")
-        val LAST_QUEST_RESET = stringPreferencesKey("last_quest_reset")
-        val LAST_PENALTY_XP_LOST = intPreferencesKey("last_penalty_xp_lost")
-        val LAST_PENALTY_STREAK_LOST = intPreferencesKey("last_penalty_streak_lost")
-        val LAST_PENALTY_DATE = stringPreferencesKey("last_penalty_date")
-        val LAST_PENALTY_TASKS_COUNT = intPreferencesKey("last_penalty_tasks_count")
+        val LAST_QUEST_RESET = stringPreferencesKey("last_quest_reset_enc")
+        val LAST_PENALTY_XP_LOST = stringPreferencesKey("last_penalty_xp_lost_enc")
+        val LAST_PENALTY_STREAK_LOST = stringPreferencesKey("last_penalty_streak_lost_enc")
+        val LAST_PENALTY_DATE = stringPreferencesKey("last_penalty_date_enc")
+        val LAST_PENALTY_TASKS_COUNT = stringPreferencesKey("last_penalty_tasks_count_enc")
+
+        // Daily Reset
+        val LAST_EVALUATED_DATE = stringPreferencesKey("last_evaluated_date_enc")
+        val CONSECUTIVE_FAILURES = stringPreferencesKey("consecutive_failures_enc")
         
         // Drafts
         val MORNING_DRAFT = stringPreferencesKey("morning_draft")
@@ -42,83 +49,146 @@ class DataStoreManager(
             emit(emptyPreferences())
         }
         .map { preferences ->
+            val questResetRaw = preferences[PreferencesKey.LAST_QUEST_RESET]
+            val questResetStr = questResetRaw?.let { dataStoreCryptoManager?.decrypt(it) ?: it }
+
+            val penaltyDateRaw = preferences[PreferencesKey.LAST_PENALTY_DATE]
+            val penaltyDateStr = penaltyDateRaw?.let { dataStoreCryptoManager?.decrypt(it) ?: it }
+
             PlayerPreferences(
                 isPlayerDataSavedLocally = preferences[PreferencesKey.IS_PLAYER_DATA_SAVED_LOCALLY] ?: false,
                 areQuestsLoaded = preferences[PreferencesKey.ARE_QUESTS_LOADED] ?: false,
-                lastQuestReset = preferences[PreferencesKey.LAST_QUEST_RESET]?.let {
+                lastQuestReset = questResetStr?.let {
                     try {
                         LocalDate.parse(it)
                     } catch (e: Exception) {
                         today
                     }
                 } ?: today,
-                lastPenaltyXpLost = preferences[PreferencesKey.LAST_PENALTY_XP_LOST] ?: 0,
-                lastPenaltyStreakLost = preferences[PreferencesKey.LAST_PENALTY_STREAK_LOST] ?: 0,
-                lastPenaltyDate = preferences[PreferencesKey.LAST_PENALTY_DATE]?.let {
+                lastPenaltyXpLost = preferences[PreferencesKey.LAST_PENALTY_XP_LOST]?.let { 
+                    dataStoreCryptoManager?.decryptInt(it) ?: it.toIntOrNull() 
+                } ?: 0,
+                lastPenaltyStreakLost = preferences[PreferencesKey.LAST_PENALTY_STREAK_LOST]?.let { 
+                    dataStoreCryptoManager?.decryptInt(it) ?: it.toIntOrNull() 
+                } ?: 0,
+                lastPenaltyDate = penaltyDateStr?.let {
                     try {
                         LocalDate.parse(it)
                     } catch (e: Exception) {
                         today
                     }
                 } ?: today,
-                lastPenaltyTasksCount = preferences[PreferencesKey.LAST_PENALTY_TASKS_COUNT] ?: 0
+                lastPenaltyTasksCount = preferences[PreferencesKey.LAST_PENALTY_TASKS_COUNT]?.let { 
+                    dataStoreCryptoManager?.decryptInt(it) ?: it.toIntOrNull() 
+                } ?: 0
             )
         }
 
-    // --- Drafts Logic ---
+    // --- Drafts Logic (using EncryptedDraftsManager) ---
     
     suspend fun saveMorningDraft(answers: Map<String, String>) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKey.MORNING_DRAFT] = Json.encodeToString(answers)
-        }
+        encryptedDraftsManager?.saveMorningDraft(answers)
+            ?: run {
+                dataStore.edit { preferences ->
+                    preferences[PreferencesKey.MORNING_DRAFT] = Json.encodeToString(answers)
+                }
+            }
     }
 
     suspend fun getMorningDraft(): Map<String, String> {
-        val preferences = dataStore.data.first()
-        val json = preferences[PreferencesKey.MORNING_DRAFT] ?: return emptyMap()
-        return try {
-            Json.decodeFromString(json)
-        } catch (e: Exception) {
-            emptyMap()
-        }
+        return encryptedDraftsManager?.getMorningDraft()
+            ?: run {
+                val preferences = dataStore.data.firstOrNull() ?: return emptyMap()
+                val json = preferences[PreferencesKey.MORNING_DRAFT] ?: return emptyMap()
+                try {
+                    Json.decodeFromString(json)
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+            }
     }
 
     suspend fun clearMorningDraft() {
-        dataStore.edit { preferences ->
-            preferences.remove(PreferencesKey.MORNING_DRAFT)
-        }
+        encryptedDraftsManager?.clearMorningDraft()
+            ?: run {
+                dataStore.edit { preferences ->
+                    preferences.remove(PreferencesKey.MORNING_DRAFT)
+                }
+            }
     }
 
     suspend fun saveEveningDraft(answers: Map<String, String>) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKey.EVENING_DRAFT] = Json.encodeToString(answers)
-        }
+        encryptedDraftsManager?.saveEveningDraft(answers)
+            ?: run {
+                dataStore.edit { preferences ->
+                    preferences[PreferencesKey.EVENING_DRAFT] = Json.encodeToString(answers)
+                }
+            }
     }
 
     suspend fun getEveningDraft(): Map<String, String> {
-        val preferences = dataStore.data.first()
-        val json = preferences[PreferencesKey.EVENING_DRAFT] ?: return emptyMap()
-        return try {
-            Json.decodeFromString(json)
-        } catch (e: Exception) {
-            emptyMap()
-        }
+        return encryptedDraftsManager?.getEveningDraft()
+            ?: run {
+                val preferences = dataStore.data.firstOrNull() ?: return emptyMap()
+                val json = preferences[PreferencesKey.EVENING_DRAFT] ?: return emptyMap()
+                try {
+                    Json.decodeFromString(json)
+                } catch (e: Exception) {
+                    emptyMap()
+                }
+            }
     }
 
     suspend fun clearEveningDraft() {
+        encryptedDraftsManager?.clearEveningDraft()
+            ?: run {
+                dataStore.edit { preferences ->
+                    preferences.remove(PreferencesKey.EVENING_DRAFT)
+                }
+            }
+    }
+
+    // --- Daily Reset Logic ---
+
+    suspend fun getLastEvaluatedDate(): String? {
+        val preferences = dataStore.data.firstOrNull() ?: return null
+        val raw = preferences[PreferencesKey.LAST_EVALUATED_DATE] ?: return null
+        return dataStoreCryptoManager?.decrypt(raw) ?: raw
+    }
+
+    suspend fun setLastEvaluatedDate(date: String) {
+        val encrypted = dataStoreCryptoManager?.encrypt(date) ?: date
         dataStore.edit { preferences ->
-            preferences.remove(PreferencesKey.EVENING_DRAFT)
+            preferences[PreferencesKey.LAST_EVALUATED_DATE] = encrypted
+        }
+    }
+
+    suspend fun getConsecutiveFailures(): Int {
+        val preferences = dataStore.data.firstOrNull() ?: return 0
+        val raw = preferences[PreferencesKey.CONSECUTIVE_FAILURES] ?: return 0
+        return dataStoreCryptoManager?.decryptInt(raw) ?: raw.toIntOrNull() ?: 0
+    }
+
+    suspend fun saveConsecutiveFailures(count: Int) {
+        val encrypted = dataStoreCryptoManager?.encryptInt(count) ?: count.toString()
+        dataStore.edit { preferences ->
+            preferences[PreferencesKey.CONSECUTIVE_FAILURES] = encrypted
         }
     }
 
     // --- Penalty Logic ---
     
     suspend fun savePenalty(summary: PenaltySummary) {
+        val encXp = dataStoreCryptoManager?.encryptInt(summary.xpLost) ?: summary.xpLost.toString()
+        val encStreak = dataStoreCryptoManager?.encryptInt(summary.streakLost) ?: summary.streakLost.toString()
+        val encTasks = dataStoreCryptoManager?.encryptInt(summary.incompleteTasks) ?: summary.incompleteTasks.toString()
+        val encDate = dataStoreCryptoManager?.encrypt(today.toString()) ?: today.toString()
+
         dataStore.edit { preferences ->
-            preferences[PreferencesKey.LAST_PENALTY_XP_LOST] = summary.xpLost
-            preferences[PreferencesKey.LAST_PENALTY_STREAK_LOST] = summary.streakLost
-            preferences[PreferencesKey.LAST_PENALTY_TASKS_COUNT] = summary.incompleteTasks
-            preferences[PreferencesKey.LAST_PENALTY_DATE] = today.toString()
+            preferences[PreferencesKey.LAST_PENALTY_XP_LOST] = encXp
+            preferences[PreferencesKey.LAST_PENALTY_STREAK_LOST] = encStreak
+            preferences[PreferencesKey.LAST_PENALTY_TASKS_COUNT] = encTasks
+            preferences[PreferencesKey.LAST_PENALTY_DATE] = encDate
         }
     }
     
@@ -141,9 +211,10 @@ class DataStoreManager(
 
     suspend fun updateQuestLoadedStatus(date: LocalDate = LocalDate.now()) {
         try {
+            val encDate = dataStoreCryptoManager?.encrypt(date.toString()) ?: date.toString()
             dataStore.edit { preferences ->
                 preferences[PreferencesKey.ARE_QUESTS_LOADED] = true
-                preferences[PreferencesKey.LAST_QUEST_RESET] = date.toString()
+                preferences[PreferencesKey.LAST_QUEST_RESET] = encDate
             }
         } catch (e: Exception) {
             // Handle edit failure
@@ -151,8 +222,8 @@ class DataStoreManager(
     }
 
     suspend fun needsQuestRefresh(): Boolean {
-        return userPreferences.first().let { prefs ->
+        return userPreferences.firstOrNull()?.let { prefs ->
             !prefs.areQuestsLoaded || prefs.lastQuestReset.isBefore(today)
-        }
+        } ?: true
     }
 }

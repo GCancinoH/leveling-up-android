@@ -718,7 +718,7 @@ fun OnboardingIdentityStep(
                     onClick = {
                         standards = standards + IdentityStandard(
                             id = UUID.randomUUID().toString(),
-                            roleId = roles.first().id,
+                            roleId = roles.firstOrNull()?.id ?: return@StandardSuggestionChip,
                             uID = "",
                             title = trainLabel,
                             type = StandardType.TRAINING,
@@ -1095,9 +1095,9 @@ private fun AddRoleSheet(
 ) {
     var roleName by remember { mutableStateOf("") }
     val icons = listOf("⚡", "🏋️", "📈", "📚", "🎯", "💻", "🎨", "🧘", "🍎", "💤")
-    var selectedIcon by remember { mutableStateOf(icons.first()) }
+    var selectedIcon by remember { mutableStateOf(icons.firstOrNull() ?: "⚡") }
     val colors = listOf("4FC3F7", "66BB6A", "BB86FC", "FF7043", "EF5350", "FFCA28", "26A69A", "F06292")
-    var selectedColor by remember { mutableStateOf(colors.first()) }
+    var selectedColor by remember { mutableStateOf(colors.firstOrNull() ?: "4FC3F7") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,

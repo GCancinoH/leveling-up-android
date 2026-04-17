@@ -32,7 +32,10 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import androidx.core.content.edit
+import com.gcancino.levelingup.domain.models.event.CentralEventProcessor
+import com.gcancino.levelingup.domain.models.event.PlayerEvent
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.withContext
 
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
@@ -40,7 +43,7 @@ import com.google.firebase.auth.FirebaseAuth
 class SessionPlayerViewModel @Inject constructor(
     application: Application,
     private val exerciseRepository: ExerciseRepository,
-    private val playerRepository: PlayerRepository,
+    private val eventProcessor: CentralEventProcessor,
     private val auth: FirebaseAuth,
     savedStateHandle: SavedStateHandle
 ) : AndroidViewModel(application) {
@@ -50,7 +53,6 @@ class SessionPlayerViewModel @Inject constructor(
     private val dateTimestamp: Long = savedStateHandle.get<Long>("date") ?: System.currentTimeMillis()
 
     // ─── Session ──────────────────────────────────────────────────────────────────
-
     private val _session = MutableStateFlow<Resource<TrainingSession?>>(Resource.Loading())
     val session: StateFlow<Resource<TrainingSession?>> = _session.asStateFlow()
 
@@ -60,12 +62,10 @@ class SessionPlayerViewModel @Inject constructor(
     val oneRepMaxes: StateFlow<Resource<List<OneRepMax>>> = _oneRepMaxes.asStateFlow()
 
     // ─── Completed Sets ───────────────────────────────────────────────────────────
-
     private val _completedSets = MutableStateFlow<Map<String, Set<Int>>>(emptyMap())
     val completedSets: StateFlow<Map<String, Set<Int>>> = _completedSets.asStateFlow()
 
     // ─── Progress ─────────────────────────────────────────────────────────────────
-
     val completedSetsCount: StateFlow<Int> = _completedSets
         .map { map -> map.values.sumOf { it.size } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -99,10 +99,12 @@ class SessionPlayerViewModel @Inject constructor(
     @SuppressLint("StaticFieldLeak")
     private var timerService: TimerService? = null
     private var timerCollectJob: Job? = null
+    private var isServiceBound = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             Timber.tag(TAG).d("TimerService connected")
+            isServiceBound = true
             val service = (binder as TimerService.TimerBinder).getService()
             timerService = service
             timerCollectJob = viewModelScope.launch {
@@ -113,6 +115,7 @@ class SessionPlayerViewModel @Inject constructor(
 
         override fun onServiceDisconnected(name: ComponentName?) {
             Timber.tag(TAG).d("TimerService disconnected")
+            isServiceBound = false
             timerService = null
             timerCollectJob?.cancel()
         }
@@ -133,7 +136,6 @@ class SessionPlayerViewModel @Inject constructor(
     }
 
     // ─── Plate Calculator ─────────────────────────────────────────────────────────
-
     private val _plateCalculatorTarget = MutableStateFlow<Double?>(null)
     val plateCalculatorTarget: StateFlow<Double?> = _plateCalculatorTarget.asStateFlow()
 
@@ -192,7 +194,6 @@ class SessionPlayerViewModel @Inject constructor(
     }
 
     // ─── Haptic ───────────────────────────────────────────────────────────────────
-
     private fun triggerHaptic() {
         val context = getApplication<Application>()
         try {
@@ -220,7 +221,6 @@ class SessionPlayerViewModel @Inject constructor(
     }
 
     // ─── Toggle (long press) ──────────────────────────────────────────────────────
-
     fun toggleSetCompleted(
         sessionId: String,
         exerciseId: String,
@@ -261,7 +261,6 @@ class SessionPlayerViewModel @Inject constructor(
     }
 
     // ─── Skip Rest ────────────────────────────────────────────────────────────────
-
     fun skipRest() {
         timerService?.stopTimer() ?: TimerService.stopService(getApplication())
         _restTimeRemaining.value = 0
@@ -303,18 +302,23 @@ class SessionPlayerViewModel @Inject constructor(
     }
 
     // ─── Plate Calculator Sheet ───────────────────────────────────────────────────
-
     fun openPlateCalculator(targetKg: Double) {
         _plateCalculatorTarget.value = targetKg
     }
 
     fun finishSession(onComplete: () -> Unit) {
-        val uid = auth.currentUser?.uid ?: return
-        val xpToAward = completedSetsCount.value * 10 
-        
+        val uid       = auth.currentUser?.uid ?: return
+        val sessionId = (_session.value as? Resource.Success)?.data?.id ?: return
+
         viewModelScope.launch(Dispatchers.IO) {
-            playerRepository.awardXP(uid, xpToAward)
-            onComplete()
+            eventProcessor.process(
+                PlayerEvent.TrainingCompleted(
+                    sessionID          = sessionId,
+                    completedSetsCount = completedSetsCount.value,
+                    uID                = uid
+                )
+            )
+            withContext(Dispatchers.Main) { onComplete() }
         }
     }
 
@@ -346,8 +350,14 @@ class SessionPlayerViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         timerCollectJob?.cancel()
-        try {
-            getApplication<Application>().unbindService(serviceConnection)
-        } catch (e: IllegalArgumentException) { }
+        if (isServiceBound) {
+            try {
+                getApplication<Application>().unbindService(serviceConnection)
+                isServiceBound = false
+            } catch (e: IllegalArgumentException) {
+                Timber.tag(TAG).w("Service was not bound: ${e.message}")
+                isServiceBound = false
+            }
+        }
     }
 }

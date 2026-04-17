@@ -381,6 +381,7 @@ class QuestStartedViewModel @Inject constructor(
         currentVoiceParser?.cleanup()
         timerJob?.cancel()
         connectivityJob?.cancel()
+        voiceStateCollectorJob?.cancel()
         tts?.shutdown()
         connectivityManager.unregisterNetworkCallback(networkCallback)
     }

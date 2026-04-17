@@ -8,19 +8,29 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.gcancino.levelingup.utils.SecurityUtils
+import net.zetetic.database.sqlcipher.SupportHelper
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
+    @OptIn(ExperimentalUnsignedTypes::class)
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        System.loadLibrary("sqlcipher")
+        // Retrieve or create a 256-bit key from secure storage
+        val passphrase: ByteArray = SecurityUtils.getOrCreateDatabaseKey(context)
+        val factory = SupportOpenHelperFactory(passphrase)
+
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             "ascenso_db"
-        ).addMigrations()
+        ).openHelperFactory(factory)
+        .addMigrations()
         .build()
     }
 

@@ -2,6 +2,7 @@ package com.gcancino.levelingup
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+        // Validate notification intent
+        validateNotificationIntent(intent)
+
         // Init OneSignal
         //OneSignal.initWithContext(this, "f55d7e4d-c67d-49d3-b4c7-d6718aa8a504")
 
@@ -51,6 +55,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        validateNotificationIntent(intent)
+    }
+
+    private fun validateNotificationIntent(intent: Intent?) {
+        val action = intent?.action
+        val notificationType = intent?.getStringExtra("notification_type")
+        
+        if (action == "com.gcancino.levelingup.NOTIFICATION_CLICK" && notificationType == "fcm_push") {
+            val title = intent.getStringExtra("notification_title") ?: ""
+            val body = intent.getStringExtra("notification_body") ?: ""
+            
+            Timber.tag("FCM").d("Notification clicked: title=$title, body=$body")
+            
+            // Handle navigation based on notification type if needed
+            // For now, just log - the Navigation composable will handle routing
+        }
+    }
+
     private fun getAndLogFCMToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
@@ -58,8 +82,9 @@ class MainActivity : ComponentActivity() {
                 return@addOnCompleteListener
             }
 
-            val token = task.result
-            Timber.tag("FCM").i("FCM Token: $token")
+            // Do not log tokens in production or anywhere they can be captured.
+            // val token = task.result
+            // Timber.tag("FCM").i("FCM Token: $token")
         }
     }
 

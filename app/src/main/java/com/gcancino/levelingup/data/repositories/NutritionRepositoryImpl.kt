@@ -14,6 +14,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.qualifiers.ApplicationContext as HiltApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -29,25 +30,22 @@ import java.io.FileOutputStream
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Named
 
 class NutritionRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    @param:HiltApplicationContext @get:HiltApplicationContext private val context: Context,
     private val nutritionDao: NutritionEntryDao,
     private val timeProvider: TimeProvider,
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage,
-    private val gson: Gson
+    private val gson: Gson,
+@Named("VisionOkHttp") private val http: OkHttpClient
 ) : NutritionRepository {
 
     private val TAG = "NutritionRepository"
 
-    // ← Change to your Flask server URL
+    // ← Backend URL from centralized Config
     private val FLASK_BASE_URL = Config.BACKEND_ENDPOINT
-
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(90, TimeUnit.SECONDS)  // Vision models take longer
-        .build()
 
     // ─── Analyze food photo ───────────────────────────────────────────────────
     override suspend fun analyzeFood(
@@ -55,6 +53,15 @@ class NutritionRepositoryImpl @Inject constructor(
         imageUri: Uri,
         identityStatement: String,
         nutritionStandards: List<NutritionStandardDto>  // ← cambio de firma
+    ): Resource<NutritionEntry>  {
+        return analyzeFoodImpl(uID, imageUri, identityStatement, nutritionStandards)
+    }
+
+    private suspend fun analyzeFoodImpl(
+        uID: String,
+        imageUri: Uri,
+        identityStatement: String,
+        nutritionStandards: List<NutritionStandardDto>
     ): Resource<NutritionEntry> {
         return try {
             val tempFile = copyUriToTempFile(imageUri)
@@ -187,7 +194,11 @@ class NutritionRepositoryImpl @Inject constructor(
             isSynced        = false
         )
 
-        kotlinx.coroutines.runBlocking { nutritionDao.insert(entry.toEntity()) }
+        // TODO: P2 fix blocked by Kotlin 2.0 annotation targeting issue with Room
+        // Using runBlocking as workaround - investigate further in Kotlin 2.1+
+        kotlinx.coroutines.runBlocking {
+            nutritionDao.insert(entry.toEntity())
+        }
         return entry
     }
 

@@ -11,7 +11,7 @@ lifecycleExt = "2.2.0"
 activityCompose = "1.13.0"
 navigationCompose = "2.9.7"
 composeBom = "2026.03.01"
-firebaseBom = "34.11.0"
+firebaseBom = "34.12.0"
 coroutines = "1.10.2"
 splashscreen = "1.2.0"
 dataStore = "1.2.1"
@@ -29,22 +29,25 @@ glance = "1.1.1"
 worker = "2.11.2"
 kspVersion = "2.3.2"
 kotlinSerialization = "2.3.20"
-kotlinSerializationJson = "1.10.0"
+kotlinSerializationJson = "1.11.0"
 kotlinReflect = "2.3.0"
-oneSignal = "5.7.6"
+oneSignal = "5.7.7"
 sqlCipher = "4.14.1"
+androidSqlCipher = "2.6.2"
 vosk = "0.3.75"
-reown = "1.6.10"
+reown = "1.6.12"
 hilt = "2.59.2"
 hiltCompose = "1.3.0"
 hiltWork = "1.3.0"
 kizitonwoseCal = "2.10.1"
-vico = "3.0.3"
+vico = "3.1.0"
 foundation = "1.10.6"
 runtime = "1.10.6"
 uiGraphics = "1.10.6"
 okHttp = "5.3.2"
-guava = "33.5.0-android"
+guava = "33.6.0-android"
+timber = "5.0.1"
+securityCrypto = "1.1.0-alpha06"
 
 [libraries]
 # Core
@@ -105,6 +108,8 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-processor = { module = "androidx.room:room-compiler-processing", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 sqlCipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlCipher" }
+androidSqlCipher = { module = "androidx.sqlite:sqlite", version.ref = "androidSqlCipher" }
+
 
 # Hilt
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
@@ -130,6 +135,8 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref="
 oneSignal = { module = "com.onesignal:OneSignal", version.ref = "oneSignal" }
 #noinspection Aligned16KB
 vosk = { group = 'com.alphacephei', name = 'vosk-android', version.ref = 'vosk' }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 # Web3 / Reown
 reownBom = { module = "com.reown:android-bom", version.ref = "reown" }

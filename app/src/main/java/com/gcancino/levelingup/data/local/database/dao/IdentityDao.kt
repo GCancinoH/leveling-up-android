@@ -106,6 +106,15 @@ interface DailyStandardEntryDao {
     @Query("UPDATE daily_standard_entries SET isFailed = 1, isSynced = 0 WHERE id = :entryId")
     suspend fun markFailed(entryId: String)
 
+    @Query("""
+        UPDATE daily_standard_entries
+        SET isFailed = 1, isSynced = 0
+        WHERE uID = :uID AND standardType = :standardType
+        AND date >= :startOfDay AND date < :endOfDay
+        AND isCompleted = 0
+    """)
+    suspend fun markFailedByType(uID: String, standardType: String, startOfDay: Long, endOfDay: Long)
+
     // Marcar como fallido por standardId (cuando viene del UseCase con standardId)
     @Query("UPDATE daily_standard_entries SET isFailed = 1, isSynced = 0 WHERE uID = :uID AND standardId = :standardId AND date >= :startOfDay AND date < :endOfDay AND isCompleted = 0")
     suspend fun markFailedByStandardId(uID: String, standardId: String, startOfDay: Long, endOfDay: Long)

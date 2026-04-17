@@ -1,7 +1,6 @@
 package com.gcancino.levelingup.domain.logic
 
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import com.gcancino.levelingup.data.local.datastore.DataStoreManager
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.dao.DailyStandardEntryDao
 import com.gcancino.levelingup.data.local.database.dao.dailyTasks.DailyTaskDao
@@ -40,20 +39,13 @@ class DailyResetManager @Inject constructor(
     private val standardEntryDao: DailyStandardEntryDao,
     private val penaltyEventDao: PenaltyEventDao,
     private val generatedQuestManager: GeneratedQuestManager,
-    private val prefs: SharedPreferences
+    private val dataStoreManager: DataStoreManager
 ) {
 
     private val TAG  = "DailyResetManager"
     private val gson = Gson()
 
     companion object {
-        private const val KEY_LAST_EVALUATED_DATE  = "last_evaluated_date"
-        private const val KEY_LAST_PENALTY_XP      = "last_penalty_xp_lost"
-        private const val KEY_LAST_PENALTY_STREAK  = "last_penalty_streak_lost"
-        private const val KEY_LAST_PENALTY_COUNT   = "last_penalty_tasks_count"
-        private const val KEY_LAST_PENALTY_DATE    = "last_penalty_date"
-        private const val KEY_CONSECUTIVE_FAILURES = "consecutive_failures"
-
         private val STREAK_MILESTONES = mapOf(
             7 to 1, 14 to 1, 30 to 2, 60 to 2, 100 to 3
         )
@@ -67,7 +59,7 @@ class DailyResetManager @Inject constructor(
 
         Timber.tag(TAG).d("evaluateAndApply() → today: $today | lastEvaluated: $lastEvaluated")
 
-        if (lastEvaluated != null && lastEvaluated >= today.minusDays(1)) {
+        if (lastEvaluated != null && lastEvaluated >= today) {
             Timber.tag(TAG).d("Already evaluated — skipping")
             return null
         }
@@ -98,7 +90,7 @@ class DailyResetManager @Inject constructor(
                 streakLost      = totalStreak,
                 incompleteTasks = totalIncomplete
             )
-            savePenaltySummary(summary)
+            dataStoreManager.savePenalty(summary)
             Timber.tag(TAG).i(
                 "✔ Penalizaciones aplicadas → XP: -$totalXpLost | " +
                         "streak: $totalStreak | incompletos: $totalIncomplete"
@@ -213,27 +205,18 @@ class DailyResetManager @Inject constructor(
         Timber.tag(TAG).d("Racha: $newStreak días")
     }
 
-    private fun getLastEvaluatedDate(): LocalDate? {
-        val stored = prefs.getString(KEY_LAST_EVALUATED_DATE, null) ?: return null
+    private suspend fun getLastEvaluatedDate(): LocalDate? {
+        val stored = dataStoreManager.getLastEvaluatedDate() ?: return null
         return try { LocalDate.parse(stored) } catch (e: Exception) { null }
     }
 
-    private fun markEvaluated(date: LocalDate) {
-        prefs.edit { putString(KEY_LAST_EVALUATED_DATE, date.toString()) }
+    private suspend fun markEvaluated(date: LocalDate) {
+        dataStoreManager.setLastEvaluatedDate(date.toString())
     }
 
-    private fun getConsecutiveFailures() = prefs.getInt(KEY_CONSECUTIVE_FAILURES, 0)
+    private suspend fun getConsecutiveFailures() = dataStoreManager.getConsecutiveFailures()
 
-    private fun saveConsecutiveFailures(count: Int) {
-        prefs.edit { putInt(KEY_CONSECUTIVE_FAILURES, count) }
-    }
-
-    private fun savePenaltySummary(summary: PenaltySummary) {
-        prefs.edit {
-            putInt(KEY_LAST_PENALTY_XP,    summary.xpLost)
-            putInt(KEY_LAST_PENALTY_STREAK, summary.streakLost)
-            putInt(KEY_LAST_PENALTY_COUNT,  summary.incompleteTasks)
-            putLong(KEY_LAST_PENALTY_DATE,  System.currentTimeMillis())
-        }
+    private suspend fun saveConsecutiveFailures(count: Int) {
+        dataStoreManager.saveConsecutiveFailures(count)
     }
 }
