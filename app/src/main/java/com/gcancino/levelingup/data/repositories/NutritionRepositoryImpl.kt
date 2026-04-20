@@ -6,43 +6,45 @@ import com.gcancino.levelingup.core.Config
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.data.local.database.dao.NutritionEntryDao
 import com.gcancino.levelingup.data.local.database.entities.NutritionEntryEntity
+import com.gcancino.levelingup.data.network.NutritionApiService
+import com.gcancino.levelingup.data.network.dto.NutritionResponseDto
 import com.gcancino.levelingup.domain.logic.TimeProvider
 import com.gcancino.levelingup.domain.models.nutrition.*
 import com.gcancino.levelingup.domain.repositories.NutritionRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.qualifiers.ApplicationContext as HiltApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import org.json.JSONObject
+import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.inject.Named
 
 class NutritionRepositoryImpl @Inject constructor(
-    @param:HiltApplicationContext @get:HiltApplicationContext private val context: Context,
+    @ApplicationContext private val context: Context,
     private val nutritionDao: NutritionEntryDao,
     private val timeProvider: TimeProvider,
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage,
-    private val gson: Gson,
-@Named("VisionOkHttp") private val http: OkHttpClient
+    private val apiService: NutritionApiService
 ) : NutritionRepository {
 
     private val TAG = "NutritionRepository"
+    private val json = Json { ignoreUnknownKeys = true }
 
     // ← Backend URL from centralized Config
     private val FLASK_BASE_URL = Config.BACKEND_ENDPOINT
@@ -68,50 +70,50 @@ class NutritionRepositoryImpl @Inject constructor(
                 ?: return Resource.Error("Failed to read image")
 
             // FIX 1: standards llegan con IDs reales, no índices generados
-            val standardsJson = gson.toJson(nutritionStandards.map {
+            val standardsJson = json.encodeToString(nutritionStandards.map {
                 mapOf("id" to it.id, "title" to it.title)
             })
 
-            val requestBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("image", tempFile.name,
-                    tempFile.asRequestBody("image/jpeg".toMediaType()))
-                .addFormDataPart("identity_statement", identityStatement)
-                .addFormDataPart("nutrition_standards", standardsJson)
-                .build()
+            val imagePart = MultipartBody.Part.createFormData(
+                "image", 
+                tempFile.name,
+                tempFile.asRequestBody("image/jpeg".toMediaType())
+            )
+            val identityPart = identityStatement.toRequestBody("text/plain".toMediaType())
+            val standardsPart = standardsJson.toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("$FLASK_BASE_URL/nutrition/analyze")
-                .post(requestBody)
-                .build()
-
-            val response = http.newCall(request).execute()
+            val responseDto = apiService.analyzeFood(
+                image = imagePart,
+                identityStatement = identityPart,
+                nutritionStandards = standardsPart
+            )
             tempFile.delete()
 
-            if (!response.isSuccessful) return Resource.Error("Analysis failed: ${response.code}")
-
-            val json     = JSONObject(response.body.string())
             val photoUrl = uploadPhotoToStorage(uID, imageUri)
-            val entry    = parseAndSave(uID, json, photoUrl)
+            val entry    = parseAndSave(uID, responseDto, photoUrl)
             Timber.tag(TAG).i("✔ Food analyzed → ${entry.foodIdentified} | score: ${entry.alignmentScore}")
             Resource.Success(entry)
 
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "analyzeFood() failed")
-            Resource.Error(e.message ?: "Analysis failed")
+            Resource.Error("Analysis failed: ${e.message}")
         }
     }
 
     // ─── Observations ─────────────────────────────────────────────────────────
-    override fun observeTodayEntries(uID: String): Flow<List<NutritionEntry>> {
-        val (start, end) = timeProvider.dayBoundaries(timeProvider.today())
-        return nutritionDao.observeForDay(uID, start, end)
-            .map { it.map { e -> e.toDomain() } }
-    }
-
-    override fun observeTodayMacros(uID: String): Flow<MacroSummary> {
-        return observeTodayEntries(uID).map { entries ->
-            entries.fold(MacroSummary(0, 0f, 0f, 0f, 0f)) { acc, e -> acc + e.macroSummary }
+    @ExperimentalCoroutinesApi
+    override fun observeTodayData(uID: String): Flow<TodayNutritionData> {
+        return flow {
+            while (true) {
+                emit(timeProvider.dayBoundaries(timeProvider.today()))
+                delay(60_000L) // 1 minute ticker to recalculate day boundaries avoiding midnight staleness
+            }
+        }.flatMapLatest { (start, end) ->
+            nutritionDao.observeForDay(uID, start, end).map { list ->
+                val entries = list.map { it.toDomain() }
+                val macros = entries.fold(MacroSummary(0, 0f, 0f, 0f, 0f)) { acc, e -> acc + e.macroSummary }
+                TodayNutritionData(entries, macros)
+            }
         }
     }
 
@@ -132,7 +134,7 @@ class NutritionRepositoryImpl @Inject constructor(
             val batch = firestore.batch()
             unsynced.forEach { entry ->
                 val ref = firestore.collection("nutrition_entries").document(entry.id)
-                batch.set(ref, entry.toDomain())
+                batch.set(ref, entry.toFirestoreMap())
             }
             batch.commit().await()
             nutritionDao.markAsSynced(unsynced.map { it.id })
@@ -140,35 +142,22 @@ class NutritionRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "syncUnsynced() failed")
-            Resource.Error(e.message ?: "Sync failed")
+            Resource.Error("Sync failed")
         }
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
-    private fun parseAndSave(uID: String, json: JSONObject, photoUrl: String): NutritionEntry {
-        val macros = json.optJSONObject("macros")
-        val micros = json.optJSONObject("micros")
-
-        val highlights: List<String> = micros?.optJSONArray("highlights")?.let { arr ->
-            (0 until arr.length()).map { arr.getString(it) }
-        } ?: emptyList()
-
-        val concerns: List<String> = micros?.optJSONArray("concerns")?.let { arr ->
-            (0 until arr.length()).map { arr.getString(it) }
-        } ?: emptyList()
-
-        // FIX 3 — parse action from Flask response
-        val action: NutritionAction? = json.optJSONObject("action")?.let { actionJson ->
-            val typeStr = actionJson.optString("type", "NONE")
-            val type    = try { NutritionActionType.valueOf(typeStr) }
+    private suspend fun parseAndSave(uID: String, dto: NutritionResponseDto, photoUrl: String): NutritionEntry {
+        // FIX 3 — parse action from DTO
+        val action: NutritionAction? = dto.action?.let { actionDto ->
+            val type = try { NutritionActionType.valueOf(actionDto.type) }
             catch (e: Exception) { NutritionActionType.NONE }
 
-            val payload = actionJson.optJSONObject("payload")
             NutritionAction(
                 type       = type,
-                taskTitle  = payload?.optString("task_title")?.takeIf { it.isNotBlank() && it != "null" },
-                standardId = payload?.optString("standard_id")?.takeIf { it.isNotBlank() && it != "null" },
-                message    = payload?.optString("message")?.takeIf { it.isNotBlank() && it != "null" }
+                taskTitle  = actionDto.payload?.taskTitle?.takeIf { it.isNotBlank() && it != "null" },
+                standardId = actionDto.payload?.standardId?.takeIf { it.isNotBlank() && it != "null" },
+                message    = actionDto.payload?.message?.takeIf { it.isNotBlank() && it != "null" }
             )
         }
 
@@ -176,29 +165,26 @@ class NutritionRepositoryImpl @Inject constructor(
             id              = UUID.randomUUID().toString(),
             uID             = uID,
             date            = Date(),
-            foodIdentified  = json.optString("food_identified", "Unknown food"),
+            foodIdentified  = dto.foodIdentified,
             photoUrl        = photoUrl,
-            calories        = json.optInt("total_calories_computed", 0), // Python-computed
-            proteinG        = macros?.optDouble("protein_g", 0.0)?.toFloat() ?: 0f,
-            carbsG          = macros?.optDouble("carbs_g", 0.0)?.toFloat() ?: 0f,
-            fatsG           = macros?.optDouble("fats_g", 0.0)?.toFloat() ?: 0f,
-            fiberG          = macros?.optDouble("fiber_g", 0.0)?.toFloat() ?: 0f,
-            microHighlights = highlights,
-            microConcerns   = concerns,
-            processingLevel = parseProcessingLevel(json.optString("processing_level")),
-            alignment       = parseAlignment(json.optString("alignment")),
-            alignmentReason = json.optString("alignment_reason", ""),
-            suggestion      = json.optString("suggestion", ""),
-            alignmentScore  = json.optDouble("alignment_score", 0.5).toFloat(), // FIX 2
-            action          = action,  // FIX 3
+            calories        = dto.totalCalories,
+            proteinG        = dto.macros.proteinG,
+            carbsG          = dto.macros.carbsG,
+            fatsG           = dto.macros.fatsG,
+            fiberG          = dto.macros.fiberG,
+            microHighlights = dto.micros.highlights,
+            microConcerns   = dto.micros.concerns,
+            processingLevel = parseProcessingLevel(dto.processingLevel),
+            alignment       = parseAlignment(dto.alignment),
+            alignmentReason = dto.alignmentReason,
+            suggestion      = dto.suggestion,
+            alignmentScore  = dto.alignmentScore,
+            action          = action,
             isSynced        = false
         )
 
         // TODO: P2 fix blocked by Kotlin 2.0 annotation targeting issue with Room
-        // Using runBlocking as workaround - investigate further in Kotlin 2.1+
-        kotlinx.coroutines.runBlocking {
-            nutritionDao.insert(entry.toEntity())
-        }
+        nutritionDao.insert(entry.toEntity())
         return entry
     }
 
@@ -251,19 +237,18 @@ class NutritionRepositoryImpl @Inject constructor(
         carbsG          = carbsG,
         fatsG           = fatsG,
         fiberG          = fiberG,
-        microHighlights = gson.toJson(microHighlights),
-        microConcerns   = gson.toJson(microConcerns),
+        microHighlights = json.encodeToString(microHighlights),
+        microConcerns   = json.encodeToString(microConcerns),
         processingLevel = processingLevel.name,
         alignment       = alignment.name,
         alignmentReason = alignmentReason,
         suggestion      = suggestion,
         alignmentScore  = alignmentScore,       // FIX 2
-        action          = action?.let { gson.toJson(it) } ?: "",  // FIX 3
+        action          = action?.let { json.encodeToString(it) } ?: "",  // FIX 3
         isSynced        = false
     )
 
     private fun NutritionEntryEntity.toDomain(): NutritionEntry {
-        val listType = object : TypeToken<List<String>>() {}.type
         return NutritionEntry(
             id              = id,
             uID             = uID,
@@ -275,17 +260,50 @@ class NutritionRepositoryImpl @Inject constructor(
             carbsG          = carbsG,
             fatsG           = fatsG,
             fiberG          = fiberG,
-            microHighlights = gson.fromJson(microHighlights, listType),
-            microConcerns   = gson.fromJson(microConcerns, listType),
+            microHighlights = json.decodeFromString(microHighlights),
+            microConcerns   = json.decodeFromString(microConcerns),
             processingLevel = parseProcessingLevel(processingLevel),
             alignment       = parseAlignment(alignment),
             alignmentReason = alignmentReason,
             suggestion      = suggestion,
             alignmentScore  = alignmentScore,   // FIX 2
             action          = if (action.isNotBlank())
-                gson.fromJson(action, NutritionAction::class.java)
+                json.decodeFromString<NutritionAction>(action)
             else null,        // FIX 3
             isSynced        = isSynced
+        )
+    }
+
+    private fun NutritionEntryEntity.toFirestoreMap(): Map<String, Any?> {
+        val actionObj = if (action.isNotBlank()) json.decodeFromString<NutritionAction>(action) else null
+
+        return mapOf(
+            "id" to id,
+            "uID" to uID,
+            "date" to date,
+            "foodIdentified" to foodIdentified,
+            "photoUrl" to photoUrl,
+            "calories" to calories,
+            "proteinG" to proteinG,
+            "carbsG" to carbsG,
+            "fatsG" to fatsG,
+            "fiberG" to fiberG,
+            "microHighlights" to json.decodeFromString<List<String>>(microHighlights),
+            "microConcerns" to json.decodeFromString<List<String>>(microConcerns),
+            "processingLevel" to processingLevel,
+            "alignment" to alignment,
+            "alignmentReason" to alignmentReason,
+            "suggestion" to suggestion,
+            "alignmentScore" to alignmentScore,
+            "action" to actionObj?.let {
+                mapOf(
+                    "type" to it.type.name,
+                    "taskTitle" to it.taskTitle,
+                    "standardId" to it.standardId,
+                    "message" to it.message
+                )
+            },
+            "isSynced" to true
         )
     }
 }

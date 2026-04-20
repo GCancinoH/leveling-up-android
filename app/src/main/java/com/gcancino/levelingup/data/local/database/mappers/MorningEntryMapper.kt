@@ -3,14 +3,17 @@ package com.gcancino.levelingup.data.local.database.mappers
 import com.gcancino.levelingup.data.local.database.entities.dailyTasks.MorningEntryEntity
 import com.gcancino.levelingup.domain.models.dailyTasks.MorningEntry
 import com.gcancino.levelingup.domain.models.dailyTasks.ReflectionAnswer
-import com.google.gson.Gson
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
-private val gson = Gson()
+private val json = Json { ignoreUnknownKeys = true }
+
 fun MorningEntryEntity.toDomain() = MorningEntry(
     id = id,
     uID = uID,
     date = date,
-    answers = gson.fromJson(answers, Array<ReflectionAnswer>::class.java).toList(),
+    answers = json.decodeFromString(answers),
     isSynced = isSynced
 )
 
@@ -18,6 +21,6 @@ fun MorningEntry.toEntity() = MorningEntryEntity(
     id = id,
     uID = uID,
     date = date,
-    answers = gson.toJson(answers),
+    answers = json.encodeToString(answers),
     isSynced = isSynced
 )

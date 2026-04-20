@@ -48,7 +48,7 @@ class BodyDataRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to save composition")
-            Resource.Error(e.message ?: "Failed to save")
+            Resource.Error("Failed to save")
         }
     }
 
@@ -90,7 +90,7 @@ class BodyDataRepositoryImpl @Inject constructor(
             Resource.Success(urls)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Photo upload failed")
-            Resource.Error(e.message ?: "Photo upload failed")
+            Resource.Error("Photo upload failed")
         }
     }
 
@@ -110,7 +110,7 @@ class BodyDataRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to save measurement")
-            Resource.Error(e.message ?: "Failed to save")
+            Resource.Error("Failed to save")
         }
     }
 
@@ -164,7 +164,7 @@ class BodyDataRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "syncUnsynced() failed")
-            Resource.Error(e.message ?: "Sync failed")
+            Resource.Error("Sync failed")
         }
     }
 
@@ -196,7 +196,7 @@ class BodyDataRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "seedFromFirestore() failed")
-            Resource.Error(e.message ?: "Seed failed")
+            Resource.Error("Seed failed")
         }
     }
 }

@@ -3,33 +3,30 @@ package com.gcancino.levelingup.data.local.database.converters
 import androidx.room.TypeConverter
 import com.gcancino.levelingup.domain.models.player.Genders
 import com.gcancino.levelingup.domain.models.player.Improvement
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 class PlayerConverters {
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
 
     // Improvements Converter
     @TypeConverter
-    fun fromImprovements(improvements: List<Improvement>?): String? = gson.toJson(improvements)
+    fun fromImprovements(improvements: List<Improvement>?): String? = improvements?.let { json.encodeToString(it) }
 
     @TypeConverter
-    fun toImprovements(json: String?): List<Improvement>? {
-        val list = object : TypeToken<List<Improvement>>() {}.type
-        return gson.fromJson(json, list)
+    fun toImprovements(jsonStr: String?): List<Improvement>? {
+        return jsonStr?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
     fun fromStringList(value: List<String>?): String? {
-        return value?.let { gson.toJson(it) }
+        return value?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toStringList(value: String?): List<String>? {
-        return value?.let {
-            val listType = object : TypeToken<List<String>>() {}.type
-            gson.fromJson(it, listType)
-        }
+        return value?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter

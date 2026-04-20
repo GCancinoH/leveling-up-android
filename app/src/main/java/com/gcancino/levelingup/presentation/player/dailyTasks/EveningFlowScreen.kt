@@ -136,11 +136,15 @@ fun EveningFlowScreen(
                     accentColor  = Color(0xFF7986CB)
                 )
             } else {
+                val weeklyObjectives by viewModel.weeklyObjectives.collectAsState()
                 TaskCreationStep(
-                    tasks          = tasks,
-                    canAddMore     = canAddMoreTasks,
-                    onAddTask      = { title, priority -> viewModel.addTask(title, priority) },
-                    onRemoveTask   = { viewModel.removeTask(it) }
+                    tasks            = tasks,
+                    weeklyObjectives = weeklyObjectives,
+                    canAddMore       = canAddMoreTasks,
+                    onAddTask        = { title, priority, objectiveId -> 
+                        viewModel.addTask(title, priority, objectiveId) 
+                    },
+                    onRemoveTask     = { viewModel.removeTask(it) }
                 )
             }
         }

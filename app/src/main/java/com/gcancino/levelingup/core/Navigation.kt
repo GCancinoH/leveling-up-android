@@ -8,16 +8,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavDeepLink
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.gcancino.levelingup.presentation.auth.signIn.SignInScreen
 import com.gcancino.levelingup.presentation.initialization.InitScreen
 import com.gcancino.levelingup.presentation.onboarding.OnboardingScreen
 import com.gcancino.levelingup.presentation.player.dailyTasks.EveningFlowScreen
 import com.gcancino.levelingup.presentation.player.dailyTasks.MorningFlowScreen
 import com.gcancino.levelingup.presentation.player.dailyTasks.TasksScreen
+import com.gcancino.levelingup.presentation.player.dailyTasks.WeeklyFlowScreen
 import com.gcancino.levelingup.presentation.player.dashboard.DashboardScreen
 import com.gcancino.levelingup.presentation.player.identity.IdentitySetupScreen
 import com.gcancino.levelingup.presentation.player.identity.IdentityWallScreen
@@ -52,7 +55,7 @@ fun Navigation() {
                     }
                 },
                 onSignInError = {
-                    navController.navigate("dashboard") {
+                    navController.navigate("signIn") {
                         popUpTo("initScreen") { inclusive = true }
                     }
                 },
@@ -169,11 +172,23 @@ fun Navigation() {
             )
         }
 
-        composable("morningFlow") {
+        composable(
+            route = "morningFlow",
+            deepLinks = listOf(navDeepLink { uriPattern = "levelingup://morning_flow" })
+        ) {
             MorningFlowScreen(onCompleted = { navController.popBackStack() })
         }
-        composable("eveningFlow") {
+        composable(
+            route = "eveningFlow",
+            deepLinks = listOf(navDeepLink { uriPattern = "levelingup://evening_flow" })
+        ) {
             EveningFlowScreen(onCompleted = { navController.popBackStack() })
+        }
+        composable(
+            route = "weeklyFlow",
+            deepLinks = listOf(navDeepLink { uriPattern = "levelingup://weekly_reset" })
+        ) {
+            WeeklyFlowScreen(onCompleted = { navController.popBackStack() })
         }
         composable("tasks") {
             TasksScreen(onNavigateBack = { navController.popBackStack() })

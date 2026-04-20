@@ -6,8 +6,16 @@ import com.gcancino.levelingup.data.local.database.dao.PlayerProgressDao
 import com.gcancino.levelingup.data.local.database.entities.identity.GeneratedQuestEntity
 import com.gcancino.levelingup.domain.models.identity.GeneratedQuestStatus
 import com.gcancino.levelingup.domain.models.identity.GeneratedQuestType
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.gcancino.levelingup.domain.repositories.PlayerRepository
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import timber.log.Timber
 import java.time.ZoneId
 import java.util.Date
@@ -24,11 +32,12 @@ class GeneratedQuestManager @Inject constructor(
     private val questDao: GeneratedQuestDao,
     private val standardEntryDao: DailyStandardEntryDao,
     private val playerProgressDao: PlayerProgressDao,
-    private val timeProvider: TimeProvider,
-    private val gson: Gson
+    private val playerRepository: PlayerRepository,
+    private val timeProvider: TimeProvider
 ) {
 
     private val TAG = "GeneratedQuestManager"
+    private val json = Json { ignoreUnknownKeys = true }
 
     // ── Save quest from weekly report ──────────────────────────────────────────
     // Called from WeeklySyncWorker after receiving the Flask response.
@@ -36,7 +45,7 @@ class GeneratedQuestManager @Inject constructor(
     suspend fun saveQuestFromReport(
         uID: String,
         weeklyReportId: String,
-        questJson: Map<String, Any>
+        questJson: JsonElement
     ) {
         try {
             // Don't create a new quest if one is already active
@@ -46,13 +55,17 @@ class GeneratedQuestManager @Inject constructor(
                 return
             }
 
-            val title       = questJson["title"] as? String ?: return
-            val description = questJson["description"] as? String ?: ""
-            val typeStr     = questJson["type"] as? String ?: "CONSISTENCY"
-            val targetIds   = (questJson["target_standard_ids"] as? List<*>)
-                ?.filterIsInstance<String>() ?: emptyList()
-            val goal        = (questJson["goal"] as? Number)?.toInt() ?: 5
-            val duration    = (questJson["duration_days"] as? Number)?.toInt() ?: 7
+            val questObj    = questJson.jsonObject
+            val title       = questObj["title"]?.jsonPrimitive?.content ?: return
+            val description = questObj["description"]?.jsonPrimitive?.content ?: ""
+            val typeStr     = questObj["type"]?.jsonPrimitive?.content ?: "CONSISTENCY"
+
+            val targetIds   = questObj["target_standard_ids"]?.let { 
+                json.decodeFromJsonElement(ListSerializer(String.serializer()), it)
+            } ?: emptyList<String>()
+            
+            val goal        = questObj["goal"]?.jsonPrimitive?.intOrNull ?: 5
+            val duration    = questObj["duration_days"]?.jsonPrimitive?.intOrNull ?: 7
 
             val startDate = Date()
             val endDate   = Date(startDate.time + duration * 24 * 60 * 60 * 1000L)
@@ -65,7 +78,7 @@ class GeneratedQuestManager @Inject constructor(
                     title             = title,
                     description       = description,
                     type              = typeStr,
-                    targetStandardIds = gson.toJson(targetIds),
+                    targetStandardIds = json.encodeToString(targetIds),
                     goal              = goal,
                     durationDays      = duration,
                     currentProgress   = 0,
@@ -112,10 +125,7 @@ class GeneratedQuestManager @Inject constructor(
             return
         }
 
-        val targetIds: List<String> = gson.fromJson(
-            quest.targetStandardIds,
-            object : TypeToken<List<String>>() {}.type
-        )
+        val targetIds: List<String> = json.decodeFromString(quest.targetStandardIds)
 
         val (start, end) = timeProvider.dayBoundaries(yesterday)
         val entries      = standardEntryDao.getForDay(uID, start, end)
@@ -155,10 +165,7 @@ class GeneratedQuestManager @Inject constructor(
     suspend fun evaluateNutritionImpact(uID: String, standardId: String) {
         val quest = questDao.getActive(uID) ?: return
 
-        val targetIds: List<String> = gson.fromJson(
-            quest.targetStandardIds,
-            object : TypeToken<List<String>>() {}.type
-        )
+        val targetIds: List<String> = json.decodeFromString(quest.targetStandardIds)
 
         // Si el estándar no es target de esta quest, no hacer nada
         if (standardId !in targetIds) return
@@ -197,10 +204,7 @@ class GeneratedQuestManager @Inject constructor(
     suspend fun evaluateGeneralNutrition(uID: String, alignmentScore: Float) {
         val quest = questDao.getActive(uID) ?: return
 
-        val targetIds: List<String> = gson.fromJson(
-            quest.targetStandardIds,
-            object : TypeToken<List<String>>() {}.type
-        )
+        val targetIds: List<String> = json.decodeFromString(quest.targetStandardIds)
 
         // Solo actúa si la quest tiene estándares NUTRITION como targets
         val today        = timeProvider.today()
@@ -266,7 +270,7 @@ class GeneratedQuestManager @Inject constructor(
                     title = "Recuperación de identidad",
                     description = "Fallaste $failedDays días seguidos en: $failedTitles. Completa estos estándares 5 días consecutivos para recuperar tu racha.",
                     type = GeneratedQuestType.STREAK.name,
-                    targetStandardIds = gson.toJson(failedStandardIds),
+                    targetStandardIds = json.encodeToString(failedStandardIds),
                     goal = 5,
                     durationDays = 5,
                     currentProgress = 0,
@@ -288,9 +292,6 @@ class GeneratedQuestManager @Inject constructor(
     }
 
     private suspend fun awardQuestXP(uID: String, xp: Int) {
-        val progress = playerProgressDao.getPlayerProgress(uID) ?: return
-        val newXP    = (progress.exp ?: 0) + xp
-        val newLevel = LevelCalculator.calculateLevel(newXP)
-        playerProgressDao.updatePlayerProgress(progress.copy(exp = newXP, level = newLevel))
+        playerRepository.awardXP(uID, xp)
     }
 }

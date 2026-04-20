@@ -208,10 +208,11 @@ class PlayerRepositoryImpl @Inject constructor(
     override suspend fun awardXP(uid: String, xp: Int): Resource<Int> = withContext(Dispatchers.IO) {
         try {
             localDB.withTransaction {
-                val currentProgress = localDB.playerProgressDao().getPlayerProgress(uid)?.toDomain()
-                    ?: createDefaultProgress(uid)
+                val currentProgress = localDB.playerProgressDao().getPlayerProgress(uid)
+                    ?: createDefaultProgress(uid).toEntity()
                 
-                val newXP = (currentProgress.exp ?: 0) + xp
+                val oldXP = currentProgress.exp ?: 0
+                val newXP = oldXP + xp
                 val oldLevel = currentProgress.level ?: 1
                 val newLevel = LevelCalculator.calculateLevel(newXP)
                 
@@ -221,26 +222,21 @@ class PlayerRepositoryImpl @Inject constructor(
                     Timber.tag("PlayerRepository").i("Level Up! $oldLevel -> $newLevel. Gained ${ (newLevel - oldLevel) * LevelCalculator.POINTS_PER_LEVEL} points.")
                 }
                 
-                val updatedProgress = currentProgress.copy(
-                    exp = newXP,
-                    level = newLevel,
-                    availablePoints = availablePoints
-                )
-
-                //localDB.playerProgressDao().insertPlayerProgress(updatedProgress.toEntity())
                 localDB.playerProgressDao().updateProgress(uid, availablePoints, newLevel, newXP)
                 
                 Resource.Success(newLevel)
             }
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Failed to award XP")
+            Timber.tag("PlayerRepository").e(e, "Failed to award XP")
+            Resource.Error("Failed to award XP")
         }
     }
 
     override suspend fun syncUnsynced(): Resource<Unit> {
         return try {
-            val uid = auth.currentUser?.uid
+            val currentUid = auth.currentUser?.uid
                 ?: return Resource.Error("No authenticated user")
+
 
             val now = System.currentTimeMillis()
 
@@ -248,7 +244,8 @@ class PlayerRepositoryImpl @Inject constructor(
             val unsyncedProgress = localDB.playerProgressDao().getUnsynced()
             val unsyncedStreaks = localDB.playerStreakDao().getUnsynced()
             val unsyncedAttributes = localDB.playerAttributesDao().getUnsynced()
-            val unsyncedPlayers = localDB.playerDao().getUnsynced(uid)
+            val unsyncedPlayers = localDB.playerDao().getUnsynced(currentUid)
+
 
             if (unsyncedProgress.isEmpty() && unsyncedStreaks.isEmpty() &&
                 unsyncedAttributes.isEmpty() && unsyncedPlayers.isEmpty()) {
@@ -279,7 +276,7 @@ class PlayerRepositoryImpl @Inject constructor(
                         "uid" to s.uid,
                         "currentStreak" to s.currentStreak,
                         "longestStreak" to s.longestStreak,
-                        "lastStreakUpdate" to s.lastStreakUpdate,
+                        "lastStreakUpdate" to s.lastStreakUpdate?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
                         "protectedDays" to s.protectedDays
                     )
                 )
@@ -287,7 +284,7 @@ class PlayerRepositoryImpl @Inject constructor(
 
             unsyncedAttributes.forEach { a ->
                 batch.set(
-                    db.collection("player_attributes").document(uid),
+                    db.collection("player_attributes").document(a.uid),
                     mapOf(
                         "uid"          to a.uid,
                         "strength"     to a.strength,
@@ -302,7 +299,7 @@ class PlayerRepositoryImpl @Inject constructor(
 
             unsyncedPlayers.forEach { p ->
                 batch.set(
-                    db.collection("players").document(uid),
+                    db.collection("players").document(currentUid),
                     mapOf(
                         "uid"         to p.uid,
                         "displayName" to p.displayName,
@@ -323,7 +320,7 @@ class PlayerRepositoryImpl @Inject constructor(
             if (unsyncedAttributes.isNotEmpty())
                 localDB.playerAttributesDao().markAsSynced(unsyncedAttributes.map { it.uid }, now)
             if (unsyncedPlayers.isNotEmpty())
-                localDB.playerDao().markAsSynced(uid, now)
+                localDB.playerDao().markAsSynced(currentUid, now)
 
             Timber.tag("PlayerRepository").i(
                 "✔ Player sync → progress: ${unsyncedProgress.size} | " +
@@ -332,7 +329,7 @@ class PlayerRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag("PlayerRepository").e(e, "syncUnsynced() failed")
-            Resource.Error(e.message ?: "Player sync failed")
+            Resource.Error("Player sync failed")
         }
     }
 

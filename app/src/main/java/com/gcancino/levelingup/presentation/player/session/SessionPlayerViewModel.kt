@@ -68,7 +68,7 @@ class SessionPlayerViewModel @Inject constructor(
     // ─── Progress ─────────────────────────────────────────────────────────────────
     val completedSetsCount: StateFlow<Int> = _completedSets
         .map { map -> map.values.sumOf { it.size } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val totalSetsCount: StateFlow<Int> = _session
         .map { resource ->
@@ -77,7 +77,7 @@ class SessionPlayerViewModel @Inject constructor(
                 ?.sumOf { block -> block.exercises.sumOf { it.sets.size } }
                 ?: 0
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // ── Session complete: emits true when every set is done ───────────────────────
     val isSessionComplete: StateFlow<Boolean> = combine(
@@ -85,7 +85,7 @@ class SessionPlayerViewModel @Inject constructor(
         totalSetsCount
     ) { completed, total ->
         total in 1..completed
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // ─── Timer ────────────────────────────────────────────────────────────────────
 

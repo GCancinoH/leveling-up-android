@@ -23,5 +23,5 @@ class ActiveQuestViewModel @Inject constructor(
     val activeQuest: StateFlow<GeneratedQuestEntity?> = questDao
         .observeActive(uID)
         .map { it.firstOrNull() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 }

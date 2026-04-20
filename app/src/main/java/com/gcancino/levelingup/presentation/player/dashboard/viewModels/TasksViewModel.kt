@@ -8,6 +8,8 @@ import com.gcancino.levelingup.domain.models.dailyTasks.TaskPriority
 import com.gcancino.levelingup.domain.models.dailyTasks.XPScale
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.PlayerRepository
+import com.gcancino.levelingup.domain.models.event.CentralEventProcessor
+import com.gcancino.levelingup.domain.models.event.PlayerEvent
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +32,7 @@ import javax.inject.Inject
 class TasksViewModel @Inject constructor(
     private val dailyRepository: DailyTasksRepository,
     private val playerRepository: PlayerRepository,
+    private val eventProcessor: CentralEventProcessor,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
@@ -44,15 +47,15 @@ class TasksViewModel @Inject constructor(
     // Real-time observation of already saved tasks
     val allTasks: StateFlow<List<DailyTask>> = dailyRepository
         .getTodaysTasks(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val pendingTasks: StateFlow<List<DailyTask>> = dailyRepository
         .getTodaysPendingTasks(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val canAddMore: StateFlow<Boolean> = allTasks
         .map { it.size < 5 }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     // Events
     private val _xpEarned = MutableSharedFlow<Int>(replay = 0)
@@ -111,26 +114,16 @@ class TasksViewModel @Inject constructor(
 
     fun completeTask(taskId: String) {
         // Find task to know reward before completing
-        val task = allTasks.value.find { it.id == taskId }
-        val reward = task?.xpReward ?: 0
+        val task = allTasks.value.find { it.id == taskId } ?: return
+        val reward = task.xpReward ?: 0
 
         viewModelScope.launch(Dispatchers.IO) {
-            when (val result = dailyRepository.completeTask(taskId, uID)) {
-                is Resource.Success -> {
-                    // Emit XP earned for the toast
-                    if (reward > 0) _xpEarned.emit(reward)
-
-                    // Emit level up if repository returns new level
-                    result.data?.let { newLevel ->
-                        _levelUp.emit(newLevel)
-                    }
-                }
-
-                is Resource.Error -> {
-                    _error.emit(result.message ?: "Failed to complete task")
-                }
-
-                else -> Unit
+            try {
+                // Pass execution to CentralEventProcessor
+                eventProcessor.process(PlayerEvent.TaskCompleted(taskId, uID))
+                if (reward > 0) _xpEarned.emit(reward)
+            } catch (e: Exception) {
+                _error.emit(e.message ?: "Failed to complete task")
             }
         }
     }

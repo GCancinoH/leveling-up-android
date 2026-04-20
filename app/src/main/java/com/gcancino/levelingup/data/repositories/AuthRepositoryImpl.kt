@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.util.Date
 import javax.inject.Inject
 
@@ -68,7 +69,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: FirebaseAuthException) {
             Resource.Error(getAuthErrorMessage(e.errorCode))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Authentication failed")
+            Resource.Error("Authentication failed")
         }
     }
 
@@ -168,7 +169,7 @@ class AuthRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Unknown error"))
+            emit(Resource.Error("Unknown error"))
         }
     }
 
@@ -245,7 +246,7 @@ class AuthRepositoryImpl @Inject constructor(
                 emit(Resource.Success(Unit))
             }
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Unknown error"))
+            emit(Resource.Error("Unknown error"))
         }
     }
 
@@ -289,7 +290,7 @@ class AuthRepositoryImpl @Inject constructor(
                 emit(Resource.Success(Unit))
             }
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "Unknown error"))
+            emit(Resource.Error("Unknown error"))
         }
     }
 
@@ -300,7 +301,7 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: FirebaseAuthException) {
             Resource.Error(getAuthErrorMessage(e.errorCode))
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Failed to send reset email")
+            Resource.Error("Failed to send reset email")
         }
     }
 
@@ -309,7 +310,7 @@ class AuthRepositoryImpl @Inject constructor(
             auth.signOut()
             Resource.Success(true)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Failed to sign out")
+            Resource.Error("Failed to sign out")
         }
     }
 
@@ -510,7 +511,7 @@ class AuthRepositoryImpl @Inject constructor(
                         val firestoreException = firestoreOutcome.exceptionOrNull()
                         if (firestoreException != null) {
                             // Log for debugging but don't fail the operation
-                            println("Firestore sync failed: ${firestoreException.message}")
+                            Timber.tag("AuthRepository").w("Firestore sync failed: ${firestoreException.message}")
                         }
                         Resource.Success(Unit) // Local save succeeded
                     }

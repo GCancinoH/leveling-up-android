@@ -40,18 +40,19 @@ interface PlayerProgressDao {
     @Query("UPDATE player_progress SET level = :level WHERE uid = :uid")
     suspend fun updateLevel(uid: String, level: Int): Int
 
-    /*@Query("UPDATE player_progress SET availablePoints = :points, level = :level, exp = :xp WHERE uid = :uid")
-    suspend fun updateProgress(uid: String, points: Int, level: Int, xp: Int): Int*/
+    @Query("UPDATE player_progress SET exp = exp + :xp, needSync = 1 WHERE uid = :uid")
+    suspend fun incrementXP(uid: String, xp: Int): Int
+
+    @Query("UPDATE player_progress SET coins = coins + :coins, needSync = 1 WHERE uid = :uid")
+    suspend fun incrementCoins(uid: String, coins: Int): Int
+
+    @Query("UPDATE player_progress SET availablePoints = :points, level = :level, exp = :xp, needSync = 1 WHERE uid = :uid")
+    suspend fun updateProgress(uid: String, points: Int, level: Int, xp: Int): Int
 
     @Query("SELECT * FROM player_progress WHERE needSync = 1")
     suspend fun getUnsynced(): List<PlayerProgressEntity>
 
     @Query("UPDATE player_progress SET needSync = 0, lastSync = :now WHERE uid IN (:uids)")
     suspend fun markAsSynced(uids: List<String>, now: Long)
-
-    // Y marcar como needSync cuando se actualiza XP:
-// Añadir al updateProgress():
-    @Query("UPDATE player_progress SET availablePoints = :points, level = :level, exp = :xp, needSync = 1 WHERE uid = :uid")
-    suspend fun updateProgress(uid: String, points: Int, level: Int, xp: Int): Int
 
 }

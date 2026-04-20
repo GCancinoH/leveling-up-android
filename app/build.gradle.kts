@@ -1,7 +1,10 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
+    //alias(libs.plugins.protobuf)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
@@ -14,7 +17,7 @@ ksp {
     arg("room.expandProjection", "true")
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.gcancino.levelingup"
     compileSdk = 37
 
@@ -26,6 +29,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "DEFAULT_BACKEND_ENDPOINT", "\"https://leveling-up-server.vercel.app\"")
     }
 
     buildTypes {
@@ -36,6 +40,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "DEFAULT_BACKEND_ENDPOINT", "\"https://leveling-up-server.vercel.app\"")
         }
     }
     compileOptions {
@@ -45,6 +50,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -53,6 +59,21 @@ android {
         }
     }
 }
+
+/*protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}*/
 
 dependencies {
     // Core
@@ -80,13 +101,15 @@ dependencies {
     // Google
     implementation(libs.google.barcode.scanner)
     implementation(libs.google.auth)
-    implementation(libs.google.gson)
+    //implementation(libs.google.gson)
     implementation(libs.google.permissions)
 
     // Firebase
     implementation(platform(libs.google.firebaseBom))
     implementation(libs.google.firebase.auth)
-    implementation(libs.google.firebase.firestore)
+    implementation(libs.google.firebase.firestore) {
+        exclude(group = "com.google.firebase", module = "protolite-well-known-types")
+    }
     implementation(libs.google.firebase.storage)
     implementation(libs.google.firebase.messaging)
     implementation(libs.google.firebase.ai)
@@ -99,6 +122,11 @@ dependencies {
     implementation(libs.splashScreen)
     // DataStore
     implementation(libs.storage.datastore)
+    implementation(libs.datastore)
+    implementation(libs.protobuf) {
+        exclude(group = "com.google.protobuf", module = "protobuf-javalite")
+    }
+    implementation(libs.tink)
     implementation(libs.timber)
     implementation(libs.security.crypto)
 
@@ -121,7 +149,8 @@ dependencies {
 
     // Retrofit
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter)
+    //implementation(libs.retrofit.converter)
+    implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.coil.image)
     // One Signal
     implementation(libs.oneSignal)
@@ -155,6 +184,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
 }
+
+
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {

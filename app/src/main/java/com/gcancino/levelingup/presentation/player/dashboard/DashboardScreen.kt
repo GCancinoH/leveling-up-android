@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gcancino.levelingup.core.Resource
 import com.gcancino.levelingup.core.SyncState
 import com.gcancino.levelingup.domain.models.notification.NotificationType
@@ -52,12 +53,12 @@ fun DashboardScreen(
     onStartMorningFlow: () -> Unit,
     onStartEveningFlow: () -> Unit,
 ) {
-    val syncState by viewModel.syncState.collectAsState()
+    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val calendarViewModel: CalendarViewmodel = viewModel()
-    val selectedDate by calendarViewModel.selectedDate.collectAsState()
-    val todaySessionState by viewModel.todaySession.collectAsState()
-    val notifications by notificationViewModel.notifications.collectAsState()
-    val notificationCount by notificationViewModel.notificationCount.collectAsState()
+    val selectedDate by calendarViewModel.selectedDate.collectAsStateWithLifecycle()
+    val todaySessionState by viewModel.todaySession.collectAsStateWithLifecycle()
+    val notifications by notificationViewModel.notifications.collectAsStateWithLifecycle()
+    val notificationCount by notificationViewModel.notificationCount.collectAsStateWithLifecycle()
 
     /* Snackbar and dropdown */
     val snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -67,11 +68,11 @@ fun DashboardScreen(
     /* Bottom sheet state for initial data notifications */
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBodyCompositionSheet by remember { mutableStateOf(false) }
-    val showTaskCreationSheet by viewModel.showTaskCreationSheet.collectAsState()
+    val showTaskCreationSheet by viewModel.showTaskCreationSheet.collectAsStateWithLifecycle()
 
     /* Tasks variables */
-    val tasks by tasksViewModel.tasks.collectAsState()
-    val canAddMore by tasksViewModel.canAddMore.collectAsState()
+    val tasks by tasksViewModel.tasks.collectAsStateWithLifecycle()
+    val canAddMore by tasksViewModel.canAddMore.collectAsStateWithLifecycle()
 
     // Observe Task Save Events
     LaunchedEffect(Unit) {
@@ -120,8 +121,8 @@ fun DashboardScreen(
     }
 
     /* Daily Tasks */
-    val showMorningCTA by viewModel.showMorningCTA.collectAsState()
-    val showEveningCTA by viewModel.showEveningCTA.collectAsState()
+    val showMorningCTA by viewModel.showMorningCTA.collectAsStateWithLifecycle()
+    val showEveningCTA by viewModel.showEveningCTA.collectAsStateWithLifecycle()
 
     // Log sync state changes for debugging
     LaunchedEffect(syncState) {

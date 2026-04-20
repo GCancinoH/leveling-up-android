@@ -87,7 +87,7 @@ class InitViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "checkPlayerAuth() failed")
-                _userState.value = UserState.Error(e.message ?: "Unknown error")
+                _userState.value = UserState.Error("Unknown error")
             }
         }
     }

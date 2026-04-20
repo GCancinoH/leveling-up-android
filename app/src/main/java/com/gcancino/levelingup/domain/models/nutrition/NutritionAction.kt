@@ -10,6 +10,7 @@ data class NutritionAction(
     val message: String? = null   // si type == WARNING
 )
 
+@Serializable
 enum class NutritionActionType {
     ADD_TASK,
     WARNING,

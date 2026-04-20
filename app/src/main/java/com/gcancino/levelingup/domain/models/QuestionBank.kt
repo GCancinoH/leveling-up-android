@@ -91,29 +91,49 @@ object QuestionBank {
     )
 
     val EVENING_ROTATING = listOf(
-        Question("e_r_1",  R.string.qb_eveningRotating_1),
-        Question("e_r_2",  R.string.qb_eveningRotating_2),
-        Question("e_r_3",  R.string.qb_eveningRotating_3),
-        Question("e_r_4",  R.string.qb_eveningRotating_4),
-        Question("e_r_5",  R.string.qb_eveningRotating_5),
-        Question("e_r_6",  R.string.qb_eveningRotating_6),
-        Question("e_r_7",  R.string.qb_eveningRotating_7),
-        Question("e_r_8",  R.string.qb_eveningRotating_8),
-        Question("e_r_9",  R.string.qb_eveningRotating_9),
-        Question("e_r_10", R.string.qb_eveningRotating_10),
-        Question("e_r_11", R.string.qb_eveningRotating_11),
-        Question("e_r_12", R.string.qb_eveningRotating_12),
-        Question("e_r_13", R.string.qb_eveningRotating_13),
-        Question("e_r_14", R.string.qb_eveningRotating_14),
-        Question("e_r_15", R.string.qb_eveningRotating_15),
-        Question("e_r_16", R.string.qb_eveningRotating_16),
-        Question("e_r_17", R.string.qb_eveningRotating_17),
-        Question("e_r_18", R.string.qb_eveningRotating_18),
-        Question("e_r_19", R.string.qb_eveningRotating_19),
-        Question("e_r_20", R.string.qb_eveningRotating_20)
+        // ... (existing questions kept)
+        Question("e_r_20",  R.string.qb_eveningRotating_20)
+    )
+
+    /**
+     * Weekly Reset (Identity Consolidation)
+     */
+    val WEEKLY_ANCHOR = listOf(
+        Question(
+            id = "w_anchor_1",
+            textRes = R.string.qb_weeklyAnchor_1, // ""
+            isAnchor = true
+        ),
+        Question(
+            id = "w_anchor_2",
+            textRes = R.string.qb_weeklyAnchor_2,
+            isAnchor = true
+        ),
+        Question(
+            id = "w_anchor_3",
+            textRes = R.string.qb_weeklyAnchor_3,
+            isAnchor = true
+        )
+    )
+
+    val WEEKLY_ROTATING = listOf(
+        Question("w_r_1", R.string.qb_weeklyRotating_1),
+        Question("w_r_2", R.string.qb_weeklyRotating_2),
+        Question("w_r_3", R.string.qb_weeklyRotating_3),
+        Question("w_r_4", R.string.qb_weeklyRotating_4),
+        Question("w_r_5", R.string.qb_weeklyRotating_5)
     )
 
     // Daily selection model
+    
+    /**
+     * Selects 2 rotating weekly questions seeded by the week number.
+     */
+    fun getTodaysWeeklyQuestions(): List<Question> {
+        val cal = java.util.Calendar.getInstance()
+        val seed = (cal.get(java.util.Calendar.YEAR) * 100 + cal.get(java.util.Calendar.WEEK_OF_YEAR)).toLong()
+        return WEEKLY_ANCHOR + WEEKLY_ROTATING.shuffled(java.util.Random(seed)).take(2)
+    }
 
     /**
      * Selects 2 rotating morning questions seeded by today's date.

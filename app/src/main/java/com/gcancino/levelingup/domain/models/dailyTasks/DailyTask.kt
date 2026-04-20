@@ -8,6 +8,7 @@ import java.util.Date
 data class DailyTask(
     val id: String = "",
     val uID: String = "",
+    val objectiveId: String? = null, // Link to hierarchical objective
     val date: @Serializable(with = DateSerializer::class) Date = Date(),
     val title: String = "",
     val priority: TaskPriority = TaskPriority.LOW,   // 1 = highest

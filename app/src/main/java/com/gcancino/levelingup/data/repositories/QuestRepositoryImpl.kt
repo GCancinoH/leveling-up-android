@@ -57,7 +57,7 @@ class QuestRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Timber.tag("QuestRepository")
                 .e(e, "Exception during Firestore sync or DB operation: ${e.message}")
-            Resource.Error(e.message ?: "Unknown error occurred during sync")
+            Resource.Error("Unknown error occurred during sync")
         }
         /*return try {
             val questsFromFirestore = getQuestsFromFirestore()
@@ -69,7 +69,7 @@ class QuestRepositoryImpl @Inject constructor(
 
             Resource.Success(Unit)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Unknown error occurred")
+            Resource.Error("Unknown error occurred")
         }*/
     }
 
@@ -93,7 +93,7 @@ class QuestRepositoryImpl @Inject constructor(
 
             Resource.Success(Unit)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Unknown error occurred")
+            Resource.Error("Unknown error occurred")
         }
     }
 
@@ -158,7 +158,7 @@ class QuestRepositoryImpl @Inject constructor(
             questDao.updateQuestStatusToInProgress(questID)
             Resource.Success(Unit)
         } catch (e: Exception) {
-            Resource.Error(e.message ?: "Unknown error occurred")
+            Resource.Error("Unknown error occurred")
         }
     }
 }

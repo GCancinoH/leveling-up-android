@@ -89,6 +89,7 @@ class ExerciseRepositoryImpl @Inject constructor(
             val snapshot = firestore.collection("sessions")
                 .whereGreaterThanOrEqualTo("date", startOfDay)
                 .whereLessThan("date", endOfDay)
+                .limit(1)
                 .get()
                 .await()
 
@@ -143,7 +144,7 @@ class ExerciseRepositoryImpl @Inject constructor(
 
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "getSessionForDate() failed for: $date")
-            emit(Resource.Error(e.message ?: "Error loading session"))
+            emit(Resource.Error("Error loading session"))
         }
     }
 
@@ -317,7 +318,7 @@ class ExerciseRepositoryImpl @Inject constructor(
 
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "saveTodaySessionLocally() failed")
-            Resource.Error(e.message ?: "Failed to save session locally")
+            Resource.Error("Failed to save session locally")
         }
     }
 }

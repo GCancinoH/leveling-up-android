@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.gcancino.levelingup.domain.models.nutrition.MacroSummary
 import com.gcancino.levelingup.domain.models.nutrition.NutritionAlignment
@@ -39,9 +40,9 @@ fun NutritionScreen(
     viewModel: NutritionViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val analyzeState by viewModel.analyzeState.collectAsState()
-    val todayEntries by viewModel.todayEntries.collectAsState()
-    val todayMacros  by viewModel.todayMacros.collectAsState()
+    val analyzeState by viewModel.analyzeState.collectAsStateWithLifecycle()
+    val todayEntries by viewModel.todayEntries.collectAsStateWithLifecycle()
+    val todayMacros  by viewModel.todayMacros.collectAsStateWithLifecycle()
 
     // Photo picker
     val photoPicker = rememberLauncherForActivityResult(

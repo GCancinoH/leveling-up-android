@@ -1,5 +1,6 @@
 package com.gcancino.levelingup.domain.models.event
 
+import com.gcancino.levelingup.domain.useCases.nutrition.ProcessNutritionResultUseCase
 import com.gcancino.levelingup.domain.useCases.processors.*
 import timber.log.Timber
 import javax.inject.Inject
@@ -20,7 +21,10 @@ class CentralEventProcessor @Inject constructor(
     suspend fun process(event: PlayerEvent) {
         Timber.tag(TAG).d("Processing: ${event::class.simpleName}")
         when (event) {
-            is PlayerEvent.NutritionAnalyzed  -> processNutritionResult.execute(event.nutritionEntry)
+            is PlayerEvent.NutritionAnalyzed  -> processNutritionResult.execute(
+                event.nutritionEntry,
+                uID = event.uID
+            )
             is PlayerEvent.TaskCompleted      -> processTaskCompletion.execute(event.taskId, event.uID)
             is PlayerEvent.TaskFailed         -> processTaskCompletion.fail(event.taskId, event.reason, event.uID)
             is PlayerEvent.TrainingCompleted  -> processTrainingResult.execute(

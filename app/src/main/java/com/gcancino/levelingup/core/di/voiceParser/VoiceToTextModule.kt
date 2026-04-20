@@ -11,6 +11,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import org.vosk.Model
+import timber.log.Timber
+import java.io.File
 import java.io.IOException
 import javax.inject.Named
 import javax.inject.Singleton
@@ -24,14 +26,18 @@ object VoiceToTextModule {
     @Provides
     @Singleton
     fun provideVoskModel(@ApplicationContext context: Context): Model? {
-        val modelPath = AssetsUtil.unpackAssetsFolder(context, VOSK_MODEL_PATH)
-        return if (modelPath != null) {
+        val modelPath = File(context.filesDir, VOSK_MODEL_PATH)
+        val modelCheckFile = File(modelPath, "am/final.mdl")
+        
+        return if (modelCheckFile.exists()) {
             try {
-                Model(modelPath)
+                Model(modelPath.absolutePath)
             } catch (e: Exception) {
+                Timber.tag("VoiceToTextModule").e(e, "Failed to initialize Vosk model")
                 null
             }
         } else {
+            Timber.tag("VoiceToTextModule").w("Vosk model not yet unpacked")
             null
         }
     }

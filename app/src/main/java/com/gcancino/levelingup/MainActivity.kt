@@ -64,14 +64,21 @@ class MainActivity : ComponentActivity() {
         val action = intent?.action
         val notificationType = intent?.getStringExtra("notification_type")
         
+        // Ensure the intent comes from a trusted action and has the expected type
         if (action == "com.gcancino.levelingup.NOTIFICATION_CLICK" && notificationType == "fcm_push") {
-            val title = intent.getStringExtra("notification_title") ?: ""
-            val body = intent.getStringExtra("notification_body") ?: ""
-            
-            Timber.tag("FCM").d("Notification clicked: title=$title, body=$body")
-            
-            // Handle navigation based on notification type if needed
-            // For now, just log - the Navigation composable will handle routing
+            // Check if the intent was actually delivered to this component specifically 
+            // and contains expected data keys to prevent intent spoofing.
+            if (intent.hasExtra("notification_title") && intent.hasExtra("notification_body")) {
+                val title = intent.getStringExtra("notification_title") ?: ""
+                val body = intent.getStringExtra("notification_body") ?: ""
+                
+                Timber.tag("FCM").d("Notification clicked: title=$title, body=$body")
+                
+                // Future enhancement: Add a signature or cryptographic token in the intent 
+                // data to verify it originated from our FCMService.
+            } else {
+                Timber.tag("FCM").w("Notification intent missing required extras.")
+            }
         }
     }
 

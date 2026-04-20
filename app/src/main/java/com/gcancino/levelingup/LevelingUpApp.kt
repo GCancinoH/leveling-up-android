@@ -7,18 +7,26 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.gcancino.levelingup.data.workers.FlowNotificationWorker
 import com.gcancino.levelingup.data.workers.MidnightPenaltyWorker
 import com.gcancino.levelingup.data.workers.NightlySyncWorker
 import com.gcancino.levelingup.data.workers.WeeklySyncWorker
-import com.google.firebase.BuildConfig
+import com.gcancino.levelingup.utils.AssetsUtil
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import androidx.work.workDataOf
 
 @HiltAndroidApp
 class LevelingUpApp : Application() {
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
@@ -30,14 +38,15 @@ class LevelingUpApp : Application() {
         // Firebase must stay on main thread — it's fast and required before any DI
         FirebaseApp.initializeApp(this)
 
-        Thread {
+        applicationScope.launch(Dispatchers.IO) {
+            // Unpack Vosk model in background to avoid ANR on first start
+            AssetsUtil.unpackAssetsFolder(this@LevelingUpApp, "model-en-us")
+            
+            // Modernized WorkManager initialization
             scheduleWeeklySync()
             scheduleMidnightPenalty()
             scheduleNightlySync()
-        }.apply {
-            name     = "WorkManagerInit"
-            isDaemon = true
-            start()
+            scheduleFlowReminders()
         }
     }
 
@@ -136,5 +145,45 @@ class LevelingUpApp : Application() {
             "MidnightPenalty scheduled → next run in ${delayMs / 1000 / 60} minutes"
         )
         return delayMs
+    }
+
+    private fun scheduleFlowReminders() {
+        val workManager = WorkManager.getInstance(this)
+
+        // Morning Reminder (8:00 AM)
+        val morningRequest = PeriodicWorkRequestBuilder<FlowNotificationWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(calculateDelayUntil(8, 0), TimeUnit.MILLISECONDS)
+            .setInputData(workDataOf(FlowNotificationWorker.KEY_FLOW_TYPE to FlowNotificationWorker.TYPE_MORNING))
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "MorningFlowReminder",
+            ExistingPeriodicWorkPolicy.KEEP,
+            morningRequest
+        )
+
+        // Evening Reminder (8:00 PM)
+        val eveningRequest = PeriodicWorkRequestBuilder<FlowNotificationWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(calculateDelayUntil(20, 0), TimeUnit.MILLISECONDS)
+            .setInputData(workDataOf(FlowNotificationWorker.KEY_FLOW_TYPE to FlowNotificationWorker.TYPE_EVENING))
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(
+            "EveningFlowReminder",
+            ExistingPeriodicWorkPolicy.KEEP,
+            eveningRequest
+        )
+    }
+
+    private fun calculateDelayUntil(hour: Int, minute: Int): Long {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (before(now)) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return target.timeInMillis - now.timeInMillis
     }
 }

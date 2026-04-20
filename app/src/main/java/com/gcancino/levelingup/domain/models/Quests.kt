@@ -3,18 +3,21 @@ package com.gcancino.levelingup.domain.models
 import android.os.Parcelable
 import com.gcancino.levelingup.domain.models.player.Improvement
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
+import com.gcancino.levelingup.core.DateSerializer
 import java.util.Date
 
 @Parcelize
+@Serializable
 data class Quests(
     val id: String = "",
     val types: List<Improvement>? = null,
     val title: String? = null,
     val description: String? = null,
     val status: QuestStatus? = QuestStatus.NOT_STARTED,
-    val date: Date = Date(),
-    val startedDate: Date? = null,
-    val finishedDate: Date? = null,
+    @Serializable(with = DateSerializer::class) val date: Date = Date(),
+    @Serializable(with = DateSerializer::class) val startedDate: Date? = null,
+    @Serializable(with = DateSerializer::class) val finishedDate: Date? = null,
     val rewards: QuestRewards? = null,
     val details: QuestDetails? = null,
     val streak: QuestStreak? = null
@@ -33,6 +36,7 @@ enum class QuestType {
 }
 
 @Parcelize
+@Serializable
 data class QuestRewards(
     val xp: Int? = null,
     val coins: Int? = null,
@@ -40,6 +44,7 @@ data class QuestRewards(
 ) : Parcelable
 
 @Parcelize
+@Serializable
 data class QuestAttributes(
     val strength: Int? = null,
     val intelligence: Int? = null,
@@ -50,6 +55,7 @@ data class QuestAttributes(
 ) : Parcelable
 
 @Parcelize
+@Serializable
 data class QuestDetails(
     val type: QuestType? = null,
     val progressionIncrement: Float? = null,
@@ -93,6 +99,7 @@ data class QuestDetails(
 
 // Optional: Helper data classes for type safety when working with specific quest types
 @Parcelize
+@Serializable
 data class EnduranceDetails(
     val progressionIncrement: Float?,
     val targetTime: Int?,
@@ -102,6 +109,7 @@ data class EnduranceDetails(
 ) : Parcelable
 
 @Parcelize
+@Serializable
 data class StrengthDetails(
     val progressionIncrement: Float?,
     val targetTime: Int?,
@@ -111,6 +119,7 @@ data class StrengthDetails(
 ) : Parcelable
 
 @Parcelize
+@Serializable
 data class RecoveryDetails(
     val progressionIncrement: Float?,
     val targetWater: Int?,
@@ -122,10 +131,11 @@ data class RecoveryDetails(
 ) : Parcelable
 
 @Parcelize
+@Serializable
 data class QuestStreak(
     val currentStreak: Int? = 0,
     val longestStreak: Int? = 0,
-    val lastStreakDate: Date? = null
+    @Serializable(with = DateSerializer::class) val lastStreakDate: Date? = null
 ) : Parcelable
 
 /*val dailyQuests: List<Quests> = listOf(

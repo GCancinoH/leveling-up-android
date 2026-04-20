@@ -32,6 +32,14 @@ interface DailyTaskDao {
     suspend fun markPenaltyApplied(taskId: String)
 
     @Query("""
+        UPDATE daily_tasks 
+        SET penaltyApplied = 1 
+        WHERE uID = :uID AND isCompleted = 0 AND penaltyApplied = 0
+        AND date >= :startOfDay AND date < :endOfDay
+    """)
+    suspend fun markPenaltyAppliedAtomic(uID: String, startOfDay: Long, endOfDay: Long)
+
+    @Query("""
     SELECT * FROM daily_tasks 
     WHERE uID = :uID AND isCompleted = 0 AND penaltyApplied = 0
     AND date >= :startOfDay AND date < :endOfDay

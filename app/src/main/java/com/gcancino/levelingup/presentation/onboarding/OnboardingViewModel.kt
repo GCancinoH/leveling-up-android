@@ -68,7 +68,7 @@ class OnboardingViewModel @Inject constructor(
             if (step.index == 0) 0f
             else step.index.toFloat() / (OnboardingStep.totalSteps - 1).toFloat()
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     // ─── In-memory onboarding data ────────────────────────────────────────────────
 
@@ -284,7 +284,7 @@ class OnboardingViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "saveAll() failed")
-                _saveState.value = Resource.Error(e.message ?: "Save failed")
+                _saveState.value = Resource.Error("Save failed")
             }
         }
     }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -57,10 +58,27 @@ class DashboardViewModel @Inject constructor(
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
     // Session State
-    private val _todaySession = MutableStateFlow<Resource<TrainingSession?>>(Resource.Loading())
-    val todaySession: StateFlow<Resource<TrainingSession?>> = _todaySession.asStateFlow()
+    private val _dateSelector = MutableStateFlow<LocalDate>(LocalDate.now())
 
-    private val _timeWindowTrigger = MutableStateFlow(0)
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val todaySession: StateFlow<Resource<TrainingSession?>> = _dateSelector
+        .flatMapLatest { localDate ->
+            flow {
+                emit(Resource.Loading())
+                val date = Date.from(
+                    localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                )
+                Timber.tag(TAG).d("Loading session from repository for date: $date")
+                exerciseRepository.getSessionForDate(date).collect { emit(it) }
+            }
+        }
+        .flowOn(Dispatchers.IO)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            Resource.Loading()
+        )
+
     private val hasDoneMorning = if (uID.isNotEmpty()) {
         dailyTasksRepository.observeMorningCompletedToday(uID)
     } else flowOf(false)
@@ -69,22 +87,30 @@ class DashboardViewModel @Inject constructor(
     } else flowOf(false)
     
     val showMorningCTA: StateFlow<Boolean> = combine(
-        _timeWindowTrigger,
+        flow {
+            while(true) {
+                emit(LocalDateTime.now().hour)
+                kotlinx.coroutines.delay(60_000)
+            }
+        },
         hasDoneMorning
-    ) { _, done ->
-        val hour = LocalDateTime.now().hour
+    ) { hour, done ->
         val morningOpen = hour in 5..11
         morningOpen && !done
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val showEveningCTA: StateFlow<Boolean> = combine(
-        _timeWindowTrigger,
+        flow {
+            while(true) {
+                emit(LocalDateTime.now().hour)
+                kotlinx.coroutines.delay(60_000)
+            }
+        },
         hasDoneEvening
-    ) { _, done ->
-        val hour = LocalDateTime.now().hour
+    ) { hour, done ->
         val eveningOpen = hour in 21..23
         eveningOpen && !done
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _showTaskCreationSheet = MutableStateFlow(false)
     val showTaskCreationSheet: StateFlow<Boolean> = _showTaskCreationSheet.asStateFlow()
@@ -101,7 +127,7 @@ class DashboardViewModel @Inject constructor(
 
     /**
      * Runs sync on Dispatchers.IO to avoid blocking the main thread.
-     * Once sync finishes, loads today's session from Room.
+     * Once sync finishes, triggers reload for the current date.
      */
     private fun syncAndLoad() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -110,14 +136,14 @@ class DashboardViewModel @Inject constructor(
 
             when (val syncResult = exerciseRepository.syncWeek(LocalDate.now())) {
                 is Resource.Success -> {
-                    Timber.tag(TAG).i("Sync succeeded. Loading today's session from Room.")
+                    Timber.tag(TAG).i("Sync succeeded. Triggering session load.")
                     _syncState.value = SyncState.Success
-                    loadSessionForDate(LocalDate.now())
+                    _dateSelector.value = LocalDate.now()
                 }
                 is Resource.Error -> {
                     Timber.tag(TAG).e("Sync failed: ${syncResult.message}. Attempting local load anyway.")
                     _syncState.value = SyncState.Error(syncResult.message ?: "Sync failed")
-                    loadSessionForDate(LocalDate.now())
+                    _dateSelector.value = LocalDate.now()
                 }
                 is Resource.Loading -> { /* syncWeek is a suspend fun, won't occur */ }
             }
@@ -126,39 +152,11 @@ class DashboardViewModel @Inject constructor(
 
     /**
      * Called by the UI when the user selects a different date in the calendar.
-     * Converts LocalDate → Date and reads from Room.
+     * Updates the date selector flow, which triggers flatMapLatest session loading.
      */
     fun getSessionForDate(localDate: LocalDate) {
-        viewModelScope.launch(Dispatchers.IO) {
-            Timber.tag(TAG).d("getSessionForDate() called for: $localDate")
-            loadSessionForDate(localDate)
-        }
-    }
-
-    /** Internal: collects the session Flow for a given date and pushes to state. */
-    private suspend fun loadSessionForDate(localDate: LocalDate) {
-        val date = Date.from(
-            localDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
-        )
-        Timber.tag(TAG).d("Loading session from Room for date: $date")
-
-        exerciseRepository.getSessionForDate(date)
-            .flowOn(Dispatchers.IO)
-            .collect { resource ->
-                _todaySession.value = resource
-                when (resource) {
-                    is Resource.Success ->
-                        Timber.tag(TAG).i(
-                            "Session loaded → %s", if (resource.data != null)
-                                        "id: ${resource.data.id}, name: ${resource.data.name}"
-                                    else "no session (Rest Day)"
-                        )
-                    is Resource.Error ->
-                        Timber.tag(TAG).d("Failed to load session: ${resource.message}")
-                    is Resource.Loading ->
-                        Timber.tag(TAG).d("Loading session...")
-                }
-            }
+        Timber.tag(TAG).d("getSessionForDate() called for: $localDate")
+        _dateSelector.value = localDate
     }
 
     /* Open and close bottom sheet: Daily Tasks */

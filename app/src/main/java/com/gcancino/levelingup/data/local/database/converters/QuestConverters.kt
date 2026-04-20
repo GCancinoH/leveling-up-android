@@ -6,13 +6,13 @@ import com.gcancino.levelingup.domain.models.QuestRewards
 import com.gcancino.levelingup.domain.models.QuestStatus
 import com.gcancino.levelingup.domain.models.QuestStreak
 import com.gcancino.levelingup.domain.models.player.Improvement
-import com.google.gson.Gson
-import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import java.util.Date
 
 class QuestConverters {
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
     // firestore key: AVW2 SKTR 3W33 KN4T W7P1 14B2 PCHV Z0VS
 
     @TypeConverter
@@ -27,35 +27,31 @@ class QuestConverters {
 
     @TypeConverter
     fun fromQuestRewards(value: QuestRewards?): String? {
-        return gson.toJson(value)
+        return value?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toQuestRewards(value: String?): QuestRewards? {
-        return value?.let { gson.fromJson(it, QuestRewards::class.java) }
+        return value?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
     fun toQuestDetails(value: String?): QuestDetails? {
-        return value?.let {
-            gson.fromJson(it, QuestDetails::class.java)
-        }
+        return value?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
     fun fromQuestDetails(questDetails: QuestDetails?): String? {
-        return questDetails?.let {
-            gson.toJson(it)
-        }
+        return questDetails?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun fromQuestStreak(value: QuestStreak?): String? {
-        return gson.toJson(value)
+        return value?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toQuestStreak(value: String?): QuestStreak? {
-        return value?.let { gson.fromJson(it, QuestStreak::class.java) }
+        return value?.let { json.decodeFromString(it) }
     }
 }

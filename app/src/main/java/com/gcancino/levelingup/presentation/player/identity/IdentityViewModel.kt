@@ -29,21 +29,21 @@ class IdentityViewModel @Inject constructor(
     // Perfil de identidad
     val identityProfile: StateFlow<IdentityProfile?> = identityRepository
         .observeIdentityProfile(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Score del día (reactivo — se actualiza cuando el usuario completa algo)
     val todayScore: StateFlow<IdentityScore> = identityRepository
         .observeTodayScore(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, IdentityScore.EMPTY)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IdentityScore.EMPTY)
 
     // Entradas del día
     val todayEntries: StateFlow<List<DailyStandardEntry>> = identityRepository
         .observeTodayEntries(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val pendingEntries: StateFlow<List<DailyStandardEntry>> = identityRepository
         .observePendingEntries(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // XP ganado (para mostrar animación)
     private val _xpEarned = MutableSharedFlow<Int>(replay = 0)

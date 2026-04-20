@@ -50,10 +50,6 @@ object AssetsUtil {
             return outputDir.absolutePath
         } catch (e: IOException) {
             Timber.tag(TAG).e(e, "Failed to unpack model '$assetFolderName'.")
-            Timber.tag(TAG).d("Successfully unpacked model '$assetFolderName'.")
-            return outputDir.absolutePath
-        } catch (e: IOException) {
-            Timber.tag(TAG).e(e, "Failed to unpack model '$assetFolderName'.")
             // Clean up on failure
             outputDir.deleteRecursively()
             return null

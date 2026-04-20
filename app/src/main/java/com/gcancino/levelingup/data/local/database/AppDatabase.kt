@@ -42,9 +42,11 @@ import com.gcancino.levelingup.data.local.database.entities.identity.*
         DailyStandardEntryEntity::class,
         WeeklyReportEntity::class,
         GeneratedQuestEntity::class,
-        NutritionEntryEntity::class
+        NutritionEntryEntity::class,
+        ObjectiveEntity::class,
+        WeeklyEntryEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(
@@ -71,6 +73,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weeklyReportDao(): WeeklyReportDao
     abstract fun generatedQuestDao(): GeneratedQuestDao
     abstract fun nutritionEntryDao(): NutritionEntryDao
+    abstract fun objectiveDao(): com.gcancino.levelingup.data.local.database.dao.identity.ObjectiveDao
+    abstract fun weeklyEntryDao(): com.gcancino.levelingup.data.local.database.dao.dailyTasks.WeeklyEntryDao
 
 
     companion object {

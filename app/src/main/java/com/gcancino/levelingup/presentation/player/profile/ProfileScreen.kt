@@ -13,7 +13,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,7 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onSignOut: () -> Unit
 ) {
-    val playerDataState by viewModel.playerData.collectAsState()
+    val playerDataState by viewModel.playerData.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
     Scaffold(
@@ -101,7 +101,7 @@ fun ProfileScreen(
                 }
                 is Resource.Error -> {
                     Text(
-                        text = resource.message ?: "Error loading profile",
+                        text = "Error loading profile",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center)
                     )

@@ -30,7 +30,8 @@ object DatabaseModule {
             AppDatabase::class.java,
             "ascenso_db"
         ).openHelperFactory(factory)
-        .addMigrations()
+        // Explicitly fallback to destructive migration so schema bumps do not cause IllegalStateException crashes
+        .fallbackToDestructiveMigration()
         .build()
     }
 

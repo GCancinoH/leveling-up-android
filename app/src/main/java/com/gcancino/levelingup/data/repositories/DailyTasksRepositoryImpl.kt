@@ -22,7 +22,11 @@ import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.PlayerRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.gson.Gson
+import androidx.room.withTransaction
+import com.gcancino.levelingup.data.local.database.AppDatabase
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -33,6 +37,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 class DailyTasksRepositoryImpl @Inject constructor(
+    private val appDatabase: AppDatabase,
     private val morningDao: MorningEntryDao,
     private val eveningDao: EveningEntryDao,
     private val taskDao: DailyTaskDao,
@@ -68,7 +73,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "saveMorningEntry() failed")
-            Resource.Error(e.message ?: "Failed to save morning entry")
+            Resource.Error("Failed to save morning entry")
         }
     }
 
@@ -93,7 +98,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "saveEveningEntry() failed")
-            Resource.Error(e.message ?: "Failed to save evening entry")
+            Resource.Error("Failed to save evening entry")
         }
     }
 
@@ -114,7 +119,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "saveTasks() failed")
-            Resource.Error(e.message ?: "Failed to save tasks")
+            Resource.Error("Failed to save tasks")
         }
     }
 
@@ -163,7 +168,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "completeTask() failed")
-            Resource.Error(e.message ?: "Failed to complete task")
+            Resource.Error("Failed to complete task")
         }
     }
 
@@ -172,69 +177,75 @@ class DailyTasksRepositoryImpl @Inject constructor(
     override suspend fun applyMidnightPenalty(uID: String): Resource<PenaltyEvent?> {
         return try {
             val (start, end) = todayBoundaries()
-            val incompleteTasks = taskDao.getTasksForDayOnce(uID, start, end)
-                .filter { !it.isCompleted && !it.penaltyApplied }
+            
+            val penaltyEvent = appDatabase.withTransaction {
+                val incompleteTasks = taskDao.getTasksForDayOnce(uID, start, end)
+                    .filter { !it.isCompleted && !it.penaltyApplied }
 
-            if (incompleteTasks.isEmpty()) {
+                if (incompleteTasks.isEmpty()) {
+                    return@withTransaction null
+                }
+
+                val totalXPLost = incompleteTasks.sumOf { it.xpReward }
+
+                // Deduct XP
+                playerProgressDao.getPlayerProgress(uID)?.let { progress ->
+                    val newXP    = maxOf(0, (progress.exp ?: 0) - totalXPLost)
+                    val newLevel = LevelCalculator.calculateLevel(newXP)
+                    playerProgressDao.updatePlayerProgress(
+                        progress.copy(exp = newXP, level = newLevel)
+                    )
+                }
+
+                // Reset streak
+                val streak     = playerStreakDao.getPlayerStreak(uID)
+                val streakLost = streak?.currentStreak ?: 0
+                if (streak != null) {
+                    playerStreakDao.updateStreak(uID, 0, Date())
+                }
+
+                // Mark tasks as penalty applied atomically via Room batch update
+                taskDao.markPenaltyAppliedAtomic(uID, start, end)
+
+                // Record PenaltyEvent
+                val event = PenaltyEvent(
+                    id = UUID.randomUUID().toString(),
+                    uID = uID,
+                    date = Date(),
+                    xpLost = totalXPLost,
+                    streakLost = streakLost,
+                    incompleteTasks = incompleteTasks.map { it.id },
+                    isSynced = false
+                )
+                
+                penaltyDao.insert(
+                    PenaltyEventEntity(
+                        id = event.id,
+                        uID = event.uID,
+                        date = event.date,
+                        xpLost = event.xpLost,
+                        streakLost = event.streakLost,
+                        incompleteTasks = Json.encodeToString(event.incompleteTasks),
+                        isSynced = false
+                    )
+                )
+                
+                event
+            }
+
+            if (penaltyEvent == null) {
                 Timber.tag(TAG).i("No incomplete tasks → no penalty applied")
                 return Resource.Success(null)
             }
 
-            Timber.tag(TAG).d("${incompleteTasks.size} incomplete task(s) → applying penalty")
-
-            val totalXPLost = incompleteTasks.sumOf { it.xpReward }
-
-            // Deduct XP
-            playerProgressDao.getPlayerProgress(uID)?.let { progress ->
-                val newXP    = maxOf(0, (progress.exp ?: 0) - totalXPLost)
-                val newLevel = LevelCalculator.calculateLevel(newXP)
-                playerProgressDao.updatePlayerProgress(
-                    progress.copy(exp = newXP, level = newLevel)
-                )
-                Timber.tag(TAG).d("XP deducted → -$totalXPLost | remaining: $newXP")
-            }
-
-            // Reset streak
-            val streak     = playerStreakDao.getPlayerStreak(uID)
-            val streakLost = streak?.currentStreak ?: 0
-            if (streak != null) {
-                playerStreakDao.updateStreak(uID, 0, Date())
-            }
-            Timber.tag(TAG).d("Streak reset → was $streakLost")
-
-            // Mark tasks as penalty applied
-            incompleteTasks.forEach { taskDao.markPenaltyApplied(it.id) }
-
-            // Record PenaltyEvent
-            val penaltyEvent = PenaltyEvent(
-                id = UUID.randomUUID().toString(),
-                uID = uID,
-                date = Date(),
-                xpLost = totalXPLost,
-                streakLost = streakLost,
-                incompleteTasks = incompleteTasks.map { it.id },
-                isSynced = false
-            )
-            penaltyDao.insert(
-                PenaltyEventEntity(
-                    id = penaltyEvent.id,
-                    uID = penaltyEvent.uID,
-                    date = penaltyEvent.date,
-                    xpLost = penaltyEvent.xpLost,
-                    streakLost = penaltyEvent.streakLost,
-                    incompleteTasks = Gson().toJson(penaltyEvent.incompleteTasks),
-                    isSynced = false
-                )
-            )
-
             Timber.tag(TAG).i(
-                "✔ Penalty applied → XP: -$totalXPLost | streak reset from $streakLost"
+                "✔ Penalty applied → XP: -${penaltyEvent.xpLost} | streak reset from ${penaltyEvent.streakLost}"
             )
             Resource.Success(penaltyEvent)
 
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "applyMidnightPenalty() failed")
-            Resource.Error(e.message ?: "Penalty failed")
+            Resource.Error("Penalty failed")
         }
     }
 
@@ -246,10 +257,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
                 date            = entity.date,
                 xpLost          = entity.xpLost,
                 streakLost      = entity.streakLost,
-                incompleteTasks = Gson().fromJson(
-                    entity.incompleteTasks,
-                    Array<String>::class.java
-                ).toList(),
+                incompleteTasks = Json.decodeFromString(entity.incompleteTasks),
                 isSynced        = entity.isSynced
             )
         }
@@ -306,7 +314,7 @@ class DailyTasksRepositoryImpl @Inject constructor(
             Resource.Success(Unit)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "syncUnsynced() failed")
-            Resource.Error(e.message ?: "Sync failed")
+            Resource.Error("Sync failed")
         }
     }
 

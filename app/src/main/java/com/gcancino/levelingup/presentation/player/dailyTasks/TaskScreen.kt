@@ -38,7 +38,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +57,8 @@ fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val pendingTasks by viewModel.pendingTasks.collectAsState()
-    val allTasks by viewModel.allTasks.collectAsState()
+    val pendingTasks by viewModel.pendingTasks.collectAsStateWithLifecycle()
+    val allTasks by viewModel.allTasks.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // XP toast

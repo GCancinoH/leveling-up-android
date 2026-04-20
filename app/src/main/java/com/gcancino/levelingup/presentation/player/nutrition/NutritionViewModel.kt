@@ -13,6 +13,7 @@ import com.gcancino.levelingup.domain.models.nutrition.NutritionActionType
 import com.gcancino.levelingup.domain.models.nutrition.NutritionAlignment
 import com.gcancino.levelingup.domain.models.nutrition.NutritionEntry
 import com.gcancino.levelingup.domain.models.nutrition.NutritionStandardDto
+import com.gcancino.levelingup.domain.models.nutrition.TodayNutritionData
 import com.gcancino.levelingup.domain.repositories.DailyTasksRepository
 import com.gcancino.levelingup.domain.repositories.IdentityRepository
 import com.gcancino.levelingup.domain.repositories.NutritionRepository
@@ -38,7 +39,7 @@ class NutritionViewModel @Inject constructor(
     // ─── Identity context ──────────────────────────────────────────────────────
     private val profile = identityRepository
         .observeIdentityProfile(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val nutritionStandards: List<NutritionStandardDto> get() =
         profile.value?.standards
@@ -47,26 +48,30 @@ class NutritionViewModel @Inject constructor(
             ?: emptyList()
 
     // ─── Today's data ──────────────────────────────────────────────────────────
-    val todayEntries: StateFlow<List<NutritionEntry>> = nutritionRepository
-        .observeTodayEntries(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val todayData: StateFlow<TodayNutritionData> = nutritionRepository
+        .observeTodayData(uID)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TodayNutritionData())
 
-    val todayMacros: StateFlow<MacroSummary> = nutritionRepository
-        .observeTodayMacros(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, MacroSummary(0, 0f, 0f, 0f, 0f))
+    val todayEntries: StateFlow<List<NutritionEntry>> = todayData
+        .map { it.entries }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val todayMacros: StateFlow<MacroSummary> = todayData
+        .map { it.macros }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MacroSummary(0, 0f, 0f, 0f, 0f))
 
     val dailyAlignmentScore: StateFlow<Float> = todayEntries
         .map { entries ->
             if (entries.isEmpty()) 0f
             else entries.map { it.alignmentScore }.average().toFloat()
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     // Auto-validación del estándar NUTRITION
     val nutritionStandardShouldValidate: StateFlow<Boolean> = nutritionRepository
         .observeAlignedCountToday(uID)
         .map { it >= 1 }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // ─── Analysis state ────────────────────────────────────────────────────────
     private val _analyzeState = MutableStateFlow<AnalyzeState>(AnalyzeState.Idle)

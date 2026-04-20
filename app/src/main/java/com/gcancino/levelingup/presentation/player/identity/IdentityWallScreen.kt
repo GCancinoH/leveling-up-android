@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gcancino.levelingup.data.local.database.entities.WeeklyReportEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,9 +28,9 @@ fun IdentityWallScreen(
     viewModel: IdentityWallViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val profile       by viewModel.profile.collectAsState()
-    val weeklyReports by viewModel.weeklyReports.collectAsState()
-    val streak        by viewModel.currentStreak.collectAsState()
+    val profile       by viewModel.profile.collectAsStateWithLifecycle()
+    val weeklyReports by viewModel.weeklyReports.collectAsStateWithLifecycle()
+    val streak        by viewModel.currentStreak.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

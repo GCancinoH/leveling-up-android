@@ -24,15 +24,15 @@ class VoiceToTextParser(
         languageCode: String,
         onCommand: (String) -> Unit
     ) {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException("VoiceToTextParser is a stub. Use OnlineVoiceParser or OfflineVoiceParser.")
     }
 
     override fun stopContinuousListening() {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException("VoiceToTextParser is a stub. Use OnlineVoiceParser or OfflineVoiceParser.")
     }
 
     override fun cleanup() {
-        TODO("Not yet implemented")
+        throw UnsupportedOperationException("VoiceToTextParser is a stub. Use OnlineVoiceParser or OfflineVoiceParser.")
     }
 
 

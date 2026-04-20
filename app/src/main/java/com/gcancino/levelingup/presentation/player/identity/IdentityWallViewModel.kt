@@ -23,16 +23,16 @@ class IdentityWallViewModel @Inject constructor(
 
     val profile = identityRepository
         .observeIdentityProfile(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Last 7 days score for the streak heatmap
     val recentScores = identityRepository
         .observeTodayScore(uID) // extend repo with 7-day history
-        .stateIn(viewModelScope, SharingStarted.Eagerly, IdentityScore.EMPTY)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), IdentityScore.EMPTY)
 
     val weeklyReports = weeklyReportDao
         .observeRecent(uID)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Current streak from player streak
     val currentStreak = MutableStateFlow(0)

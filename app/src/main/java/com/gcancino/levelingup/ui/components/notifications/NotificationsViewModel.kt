@@ -32,7 +32,7 @@ class NotificationsViewModel @Inject constructor(
 
     val notificationCount: StateFlow<Int> = _notifications
         .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     init {
         checkForNotifications()

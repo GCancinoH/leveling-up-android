@@ -55,7 +55,10 @@
     <string name="qb_eveningRotating_18">What pattern are you finally ready to interrupt — and what replaces it?</string>
     <string name="qb_eveningRotating_19">Where in your day did you feel most like the person you\'re trying to become?</string>
     <string name="qb_eveningRotating_20">If today were a chapter in the story of who you became, what would its title be?</string>
-
+    // Weekly
+    <string name="qb_weeklyAnchor_1">Looking at your wins, how did you prove your new identity this week?</string>
+    <string name="qb_weeklyAnchor_2">What neural pathway (old habit) tried to pull you back, and how will you interrupt it next week?</string>
+    <string name="qb_weeklyAnchor_3">If you were already the 100% version of your [Role], what would they do differently next week?</string>
     <!-- Identity Setup -->
     <string name="identity_title">Your Identity</string>
     <string name="identity_subtitle">Define who you are, not what you do.</string>

@@ -34,7 +34,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,10 +53,10 @@ fun StandardsScreen(
     viewModel: IdentityViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val profile       by viewModel.identityProfile.collectAsState()
-    val score         by viewModel.todayScore.collectAsState()
-    val allEntries    by viewModel.todayEntries.collectAsState()
-    val pendingEntries by viewModel.pendingEntries.collectAsState()
+    val profile       by viewModel.identityProfile.collectAsStateWithLifecycle()
+    val score         by viewModel.todayScore.collectAsStateWithLifecycle()
+    val allEntries    by viewModel.todayEntries.collectAsStateWithLifecycle()
+    val pendingEntries by viewModel.pendingEntries.collectAsStateWithLifecycle()
 
     val scoreColor = when (score.color) {
         IdentityScoreColor.PERFECT -> Color(0xFF00E676)

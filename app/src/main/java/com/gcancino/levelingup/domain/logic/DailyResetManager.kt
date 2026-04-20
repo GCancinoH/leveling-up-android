@@ -9,7 +9,8 @@ import com.gcancino.levelingup.data.local.database.dao.PlayerProgressDao
 import com.gcancino.levelingup.data.local.database.dao.PlayerStreakDao
 import com.gcancino.levelingup.data.local.database.entities.dailyTasks.PenaltyEventEntity
 import com.gcancino.levelingup.domain.models.dailyTasks.PenaltySummary
-import com.google.gson.Gson
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.time.LocalDate
 import java.util.Date
@@ -43,7 +44,7 @@ class DailyResetManager @Inject constructor(
 ) {
 
     private val TAG  = "DailyResetManager"
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
 
     companion object {
         private val STREAK_MILESTONES = mapOf(
@@ -82,7 +83,7 @@ class DailyResetManager @Inject constructor(
             day = day.plusDays(1)
         }
 
-        markEvaluated(today.minusDays(1))
+        markEvaluated(today)
 
         if (totalXpLost > 0 || totalIncomplete > 0) {
             val summary = PenaltySummary(
@@ -174,7 +175,7 @@ class DailyResetManager @Inject constructor(
                 date            = Date(start),
                 xpLost          = totalXpLost,
                 streakLost      = streakLost,
-                incompleteTasks = gson.toJson(allIds),
+                incompleteTasks = json.encodeToString(allIds),
                 isSynced        = false
             )
         )
