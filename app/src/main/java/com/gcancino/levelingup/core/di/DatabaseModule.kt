@@ -102,4 +102,12 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideNutritionEntryDao(db: AppDatabase) = db.nutritionEntryDao()
+
+    @Provides
+    @Singleton
+    fun provideObjectiveDao(db: AppDatabase) = db.objectiveDao()
+
+    @Provides
+    @Singleton
+    fun provideWeeklyEntryDao(db: AppDatabase) = db.weeklyEntryDao()
 }

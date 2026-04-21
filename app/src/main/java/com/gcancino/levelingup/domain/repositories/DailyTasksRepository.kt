@@ -20,6 +20,7 @@ interface DailyTasksRepository {
     // ── Tasks ─────────────────────────────────────────────────────────────────────
     suspend fun saveTasks(tasks: List<DailyTask>): Resource<Unit>
     fun getTodaysTasks(uID: String): Flow<List<DailyTask>>
+    fun observeTasksForDate(uID: String, date: java.util.Date): Flow<List<DailyTask>>
     fun getTodaysPendingTasks(uID: String): Flow<List<DailyTask>>
     suspend fun completeTask(taskId: String, uID: String): Resource<Int>   // returns XP earned
     suspend fun countTodaysTasks(uID: String): Int

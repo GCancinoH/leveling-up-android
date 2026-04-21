@@ -115,7 +115,7 @@ class TasksViewModel @Inject constructor(
     fun completeTask(taskId: String) {
         // Find task to know reward before completing
         val task = allTasks.value.find { it.id == taskId } ?: return
-        val reward = task.xpReward ?: 0
+        val reward = task.xpReward
 
         viewModelScope.launch(Dispatchers.IO) {
             try {

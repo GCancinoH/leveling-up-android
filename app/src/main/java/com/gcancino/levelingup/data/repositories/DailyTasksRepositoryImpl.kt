@@ -52,8 +52,11 @@ class DailyTasksRepositoryImpl @Inject constructor(
     private val TAG = "DailyRepository"
 
     /* Daily Boundaries */
-    private fun todayBoundaries(): Pair<Long, Long> {
+    private fun todayBoundaries(): Pair<Long, Long> = dayBoundaries(Date())
+
+    private fun dayBoundaries(date: Date): Pair<Long, Long> {
         val cal = Calendar.getInstance().apply {
+            time = date
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
         }
@@ -125,6 +128,11 @@ class DailyTasksRepositoryImpl @Inject constructor(
 
     override fun getTodaysTasks(uID: String): Flow<List<DailyTask>> {
         val (start, end) = todayBoundaries()
+        return taskDao.getTasksForDay(uID, start, end).map { it.map { e -> e.toDomain() } }
+    }
+
+    override fun observeTasksForDate(uID: String, date: Date): Flow<List<DailyTask>> {
+        val (start, end) = dayBoundaries(date)
         return taskDao.getTasksForDay(uID, start, end).map { it.map { e -> e.toDomain() } }
     }
 

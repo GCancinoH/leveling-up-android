@@ -56,6 +56,18 @@
     <string name="qb_eveningRotating_19">¿En qué momento del día te sentiste más como la persona que intentas llegar a ser?</string>
     <string name="qb_eveningRotating_20">Si hoy fuera un capítulo en la historia de quién llegaste a ser, ¿qué título tendría?</string>
 
+    // Semanal
+    <string name="qb_weeklyAnchor_1">Mirando tus victorias, ¿cómo demostraste tu nueva identidad esta semana?</string>
+    <string name="qb_weeklyAnchor_2">¿Qué vía neural (viejo hábito) intentó retenerte y cómo la interrumpirás la próxima semana?</string>
+    <string name="qb_weeklyAnchor_3">Si ya fueras la versión al 100% de tu [Rol], ¿qué harían de manera diferente la próxima semana?</string>
+
+    <!-- Weekly Rotating -->
+    <string name="qb_weeklyRotating_1">¿En qué área te conformaste con poco esta semana y cómo te expandirás la próxima?</string>
+    <string name="qb_weeklyRotating_2">¿Cuál de tus valores encarnaste con más coherencia esta semana?</string>
+    <string name="qb_weeklyRotating_3">¿Cuál fue la lección más importante que aprendiste sobre ti mismo en un momento de fracaso esta semana?</string>
+    <string name="qb_weeklyRotating_4">Si pudieras cambiar una decisión que tomaste esta semana, ¿cuál sería y por qué?</string>
+    <string name="qb_weeklyRotating_5">¿Cómo ha evolucionado tu identidad en los últimos siete días?</string>
+
     <!-- Identity Setup -->
     <string name="identity_title">Tu Identidad</string>
     <string name="identity_subtitle">Define quién eres, no qué haces.</string>

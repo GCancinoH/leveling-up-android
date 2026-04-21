@@ -59,6 +59,13 @@
     <string name="qb_weeklyAnchor_1">Looking at your wins, how did you prove your new identity this week?</string>
     <string name="qb_weeklyAnchor_2">What neural pathway (old habit) tried to pull you back, and how will you interrupt it next week?</string>
     <string name="qb_weeklyAnchor_3">If you were already the 100% version of your [Role], what would they do differently next week?</string>
+
+    <!-- Weekly Rotating -->
+    <string name="qb_weeklyRotating_1">What is one area where you were "playing small" this week, and how will you expand next week?</string>
+    <string name="qb_weeklyRotating_2">Which of your values did you embody most consistently this week?</string>
+    <string name="qb_weeklyRotating_3">What was the most important lesson you learned about yourself during a moment of failure this week?</string>
+    <string name="qb_weeklyRotating_4">If you could change one decision you made this week, what would it be and why?</string>
+    <string name="qb_weeklyRotating_5">How has your identity evolved over the last seven days?</string>
     <!-- Identity Setup -->
     <string name="identity_title">Your Identity</string>
     <string name="identity_subtitle">Define who you are, not what you do.</string>
